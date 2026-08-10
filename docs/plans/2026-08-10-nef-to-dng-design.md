@@ -85,6 +85,13 @@ Thumbnails come from the embedded preview, loaded lazily off-thread. Status runs
 queued → converting → done ✓ / failed ✗. Failed rows show their error inline and
 remain in the list.
 
+**Reporting** — a finished row shows what it cost: `Done · 42,4 MB → 24,6 MB`.
+When the batch ends, an `AdwAlertDialog` states how many files converted, how many
+were skipped or failed, and the total space saved. Sizes go through
+`glib::format_size`, so separators and units follow the user's locale rather than
+being hardcoded. A batch whose DNGs came out *larger* says so plainly instead of
+reporting a negative saving.
+
 **Options** — an `AdwPreferencesDialog` mapping onto `ConvertParams`: compression
 (Lossless / Uncompressed), embed original NEF, crop mode, preserve mtime, optional
 Artist string. Defaults are good enough to ignore entirely.

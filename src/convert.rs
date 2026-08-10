@@ -19,8 +19,9 @@ use crate::paths::part_path;
 /// What happened to one file.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Outcome {
-    /// A DNG was written.
-    Converted,
+    /// A DNG was written, with the sizes of both files so the batch can report
+    /// how much space was saved.
+    Converted { source_bytes: u64, target_bytes: u64 },
     /// The target already existed and overwriting was not requested.
     Skipped,
 }
@@ -93,7 +94,17 @@ pub fn convert_file(
 
     let failure = match written {
         Ok(Ok(())) => match fs::rename(&part, target) {
-            Ok(()) => return Ok(Outcome::Converted),
+            Ok(()) => {
+                // Measured after the rename so the figures describe files that
+                // actually exist; unreadable metadata reports zero rather than
+                // failing a conversion that succeeded.
+                let source_bytes = fs::metadata(source).map(|m| m.len()).unwrap_or(0);
+                let target_bytes = fs::metadata(target).map(|m| m.len()).unwrap_or(0);
+                return Ok(Outcome::Converted {
+                    source_bytes,
+                    target_bytes,
+                });
+            }
             Err(e) => ConvertError::Io(e),
         },
         Ok(Err(e)) => e,

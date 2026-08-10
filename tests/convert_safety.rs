@@ -112,7 +112,24 @@ fn real_nef_converts_to_a_dng_and_leaves_no_part_file() {
 
     let outcome = convert_file(&src, &dst, false).expect("conversion should succeed");
 
-    assert_eq!(outcome, Outcome::Converted);
+    match outcome {
+        Outcome::Converted {
+            source_bytes,
+            target_bytes,
+        } => {
+            assert_eq!(
+                source_bytes,
+                fs::metadata(&src).expect("source metadata").len(),
+                "reported source size must match the file on disk"
+            );
+            assert_eq!(
+                target_bytes,
+                fs::metadata(&dst).expect("target metadata").len(),
+                "reported target size must match the file on disk"
+            );
+        }
+        other => panic!("expected Converted, got {other:?}"),
+    }
     assert!(dst.exists(), "a .dng must exist");
     assert!(part_files(&dir).is_empty(), "no .part may survive a success");
 

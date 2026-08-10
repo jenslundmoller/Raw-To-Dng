@@ -15,14 +15,16 @@ use crate::convert::{convert_file, Outcome};
 use crate::model::FileRow;
 use crate::paths::{base_for_folder, is_nikon_raw, AddSource};
 use crate::scan::collect_raw_files;
+use crate::summary::{completion_message, BatchSummary};
 
 /// Sent from the worker pool back to the main loop.
 enum Msg {
     Started(u32),
+    /// The whole result travels back so the main loop owns both the wording
+    /// shown on the row and the running totals, keeping them consistent.
     Finished {
         index: u32,
-        status: String,
-        failed: bool,
+        result: Result<Outcome, String>,
     },
     AllDone,
 }
@@ -326,7 +328,7 @@ pub fn build(app: &adw::Application) {
         let cancel_btn_c = cancel_btn.clone();
         let progress_c = progress.clone();
         let overwrite_c = overwrite.clone();
-        let toasts_c = toasts.clone();
+        let window_c = window.clone();
         let add_files_btn_c = add_files_btn.clone();
         let add_folder_btn_c = add_folder_btn.clone();
         let clear_btn_c = clear_btn.clone();
@@ -381,16 +383,12 @@ pub fn build(app: &adw::Application) {
                         }
                         let _ = tx.send_blocking(Msg::Started(*index));
 
-                        let (status, failed) = match convert_file(source, target, overwrite_flag) {
-                            Ok(Outcome::Converted) => ("Done".to_string(), false),
-                            Ok(Outcome::Skipped) => ("Already exists".to_string(), false),
-                            Err(e) => (e.to_string(), true),
-                        };
+                        let result = convert_file(source, target, overwrite_flag)
+                            .map_err(|e| e.to_string());
 
                         let _ = tx.send_blocking(Msg::Finished {
                             index: *index,
-                            status,
-                            failed,
+                            result,
                         });
                     });
                 });
@@ -403,14 +401,13 @@ pub fn build(app: &adw::Application) {
             let convert_btn = convert_btn_c.clone();
             let cancel_btn = cancel_btn_c.clone();
             let progress = progress_c.clone();
-            let toasts = toasts_c.clone();
+            let window_for_dialog = window_c.clone();
             let add_files_btn = add_files_btn_c.clone();
             let add_folder_btn = add_folder_btn_c.clone();
             let clear_btn = clear_btn_c.clone();
 
             glib::spawn_future_local(async move {
-                let mut completed = 0u32;
-                let mut failures = 0u32;
+                let mut summary = BatchSummary::default();
 
                 while let Ok(msg) = rx.recv().await {
                     match msg {
@@ -420,21 +417,37 @@ pub fn build(app: &adw::Application) {
                                 row.set_status("Converting…");
                             }
                         }
-                        Msg::Finished {
-                            index,
-                            status,
-                            failed,
-                        } => {
+                        Msg::Finished { index, result } => {
+                            let (status, failed) = match &result {
+                                Ok(Outcome::Converted {
+                                    source_bytes,
+                                    target_bytes,
+                                }) => (
+                                    format!(
+                                        "Done · {} → {}",
+                                        glib::format_size(*source_bytes),
+                                        glib::format_size(*target_bytes)
+                                    ),
+                                    false,
+                                ),
+                                Ok(Outcome::Skipped) => ("Already exists".to_string(), false),
+                                Err(e) => (e.clone(), true),
+                            };
+
+                            match &result {
+                                Ok(outcome) => summary.record(outcome),
+                                Err(_) => summary.record_failure(),
+                            }
+
                             if let Some(row) = store.item(index).and_downcast::<FileRow>() {
                                 row.set_busy(false);
                                 row.set_failed(failed);
                                 row.set_status(status);
                             }
-                            completed += 1;
-                            if failed {
-                                failures += 1;
-                            }
-                            progress.set_fraction(f64::from(completed) / f64::from(total.max(1)));
+
+                            progress.set_fraction(
+                                f64::from(summary.total()) / f64::from(total.max(1)),
+                            );
                         }
                         Msg::AllDone => break,
                     }
@@ -447,12 +460,12 @@ pub fn build(app: &adw::Application) {
                 add_folder_btn.set_sensitive(true);
                 clear_btn.set_sensitive(true);
 
-                let text = if failures == 0 {
-                    format!("Converted {completed} of {total}")
-                } else {
-                    format!("Converted {} of {total}, {failures} failed", completed - failures)
-                };
-                toasts.add_toast(adw::Toast::new(&text));
+                let (heading, body) = completion_message(&summary, total);
+                let dialog = adw::AlertDialog::new(Some(&heading), Some(&body));
+                dialog.add_response("close", "Close");
+                dialog.set_default_response(Some("close"));
+                dialog.set_close_response("close");
+                dialog.present(Some(&window_for_dialog));
             });
         });
     }

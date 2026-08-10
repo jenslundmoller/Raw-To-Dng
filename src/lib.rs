@@ -4,4 +4,5 @@ pub mod convert;
 pub mod model;
 pub mod paths;
 pub mod scan;
+pub mod summary;
 pub mod ui;

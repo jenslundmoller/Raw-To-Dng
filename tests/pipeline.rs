@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use neftodng::convert::{convert_file, Outcome};
 use neftodng::paths::{base_for_folder, output_path, AddSource};
 use neftodng::scan::collect_raw_files;
+use neftodng::summary::BatchSummary;
 
 fn scratch(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("neftodng-pipeline-{}-{name}", std::process::id()));
@@ -34,6 +35,7 @@ fn scans_a_folder_and_converts_every_file_into_a_mirrored_tree() {
     };
 
     let mut converted = 0;
+    let mut summary = BatchSummary::default();
     for source in &files {
         let target = output_path(source, &add, &out_root);
 
@@ -50,13 +52,42 @@ fn scans_a_folder_and_converts_every_file_into_a_mirrored_tree() {
         );
 
         match convert_file(source, &target, false).expect("conversion") {
-            Outcome::Converted => converted += 1,
+            Outcome::Converted {
+                source_bytes,
+                target_bytes,
+            } => {
+                converted += 1;
+                summary.record(&Outcome::Converted {
+                    source_bytes,
+                    target_bytes,
+                });
+            }
             Outcome::Skipped => panic!("nothing should pre-exist in a fresh output root"),
         }
         assert!(target.exists(), "{target:?} was not written");
     }
 
     assert_eq!(converted, files.len(), "every file should have converted");
+
+    // the figure the completion dialog reports must match the files on disk
+    let source_total: u64 = files
+        .iter()
+        .map(|p| fs::metadata(p).expect("source metadata").len())
+        .sum();
+    let target_total: u64 = files
+        .iter()
+        .map(|p| {
+            fs::metadata(output_path(p, &add, &out_root))
+                .expect("target metadata")
+                .len()
+        })
+        .sum();
+    assert_eq!(
+        summary.saved_bytes,
+        source_total as i64 - target_total as i64,
+        "reported saving must match actual bytes on disk"
+    );
+    assert!(summary.saved_bytes > 0, "DNG should be smaller than NEF here");
     assert!(no_part_files(&out_root), "no .part files may survive");
 
     // sources must be exactly as they were

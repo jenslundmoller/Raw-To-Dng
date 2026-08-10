@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=NEF to DNG
+GenericName=Raw Converter
+Comment=Batch convert Nikon NEF raw files to DNG
+Exec=@BINARY@ %F
+Icon=dk.lundmoller.NefToDng
+Terminal=false
+Categories=Graphics;Photography;
+Keywords=NEF;DNG;RAW;Nikon;Photo;Convert;Camera;
+MimeType=image/x-nikon-nef;image/x-nikon-nrw;
+StartupNotify=true

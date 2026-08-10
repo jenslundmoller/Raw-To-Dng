@@ -36,7 +36,12 @@ fn default_out_root() -> PathBuf {
         .join("DNG")
 }
 
-pub fn build(app: &adw::Application) {
+/// Adds paths to the queue of an already-built window. Returned by [`build`] so
+/// files opened from the file manager land in the existing window instead of
+/// spawning a second one.
+pub type AddPaths = Rc<dyn Fn(Vec<PathBuf>)>;
+
+pub fn build(app: &adw::Application) -> AddPaths {
     let store = gio::ListStore::new::<FileRow>();
     let out_root = Rc::new(RefCell::new(default_out_root()));
     let cancel = Arc::new(AtomicBool::new(false));
@@ -184,7 +189,7 @@ pub fn build(app: &adw::Application) {
     refresh_stack();
 
     // ---- adding files -----------------------------------------------------
-    let add_paths = {
+    let add_paths: AddPaths = {
         let store = store.clone();
         let out_root = out_root.clone();
         let refresh_stack = refresh_stack.clone();
@@ -481,6 +486,7 @@ pub fn build(app: &adw::Application) {
     }
 
     window.present();
+    add_paths
 }
 
 /// `/home/jens/Pictures/DNG` → `~/Pictures/DNG`, for a readable button label.

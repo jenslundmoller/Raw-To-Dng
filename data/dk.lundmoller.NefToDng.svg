@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#62a0ea"/>
+      <stop offset="1" stop-color="#3584e4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- rounded app tile -->
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#bg)"/>
+
+  <!-- aperture: six blades around a hexagonal opening -->
+  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="64" cy="64" r="46"/>
+    <path d="M64.0,18.0 L81.3,54.0 M103.8,41.0 L81.3,74.0 M103.8,87.0 L64.0,84.0 M64.0,110.0 L46.7,74.0 M24.2,87.0 L46.7,54.0 M24.2,41.0 L64.0,44.0"/>
+    <polygon points="64.0,44.0 81.3,54.0 81.3,74.0 64.0,84.0 46.7,74.0 46.7,54.0"/>
+  </g>
+</svg>

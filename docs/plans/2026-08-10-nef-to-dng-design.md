@@ -165,3 +165,26 @@ on sources.
 Present: Rust 1.94, cargo, gcc, pkg-config.
 Needed: `sudo apt install libgtk-4-dev libadwaita-1-dev`
 Optional, for debugging: `sudo apt install libimage-exiftool-perl`
+
+## Installation
+
+`./install.sh` builds the release binary and installs it entirely under
+`~/.local`, needing no root: the binary to `~/.local/bin`, a scalable icon to
+`~/.local/share/icons/hicolor/scalable/apps`, and the desktop entry to
+`~/.local/share/applications`. `./install.sh --uninstall` reverses it.
+
+The desktop entry is named `dk.lundmoller.NefToDng.desktop` to match the
+GApplication ID exactly, which is how Wayland associates a window with its icon
+in the dash and the alt-tab switcher. `Exec` is written as an absolute path at
+install time, because `~/.local/bin` is not reliably on `PATH` for applications
+launched by the shell.
+
+The entry declares `MimeType` for NEF and NRW so the converter appears under
+*Open With*, and `%F` so it accepts files. That obliges the application to
+actually handle them: it runs with `HANDLES_OPEN` and routes opened files into
+the existing window's queue rather than opening a second window.
+
+**Registering the MIME types makes the converter a candidate default handler.**
+Installation therefore does not leave it as the default for NEF; a raw converter
+stealing double-click from a raw *editor* would be a regression, so Darktable
+stays the default and the converter is reachable through *Open With*.

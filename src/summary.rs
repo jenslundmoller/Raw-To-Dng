@@ -71,7 +71,7 @@ pub fn completion_message(summary: &BatchSummary, queued: u32) -> (String, Strin
     if summary.converted > 0 {
         lines.push(format!(
             "All {} verified against the originals: pixels bit-for-bit, plus \
-             colour matrices, white balance and levels.",
+             colour, white balance, levels, lens, timestamps and GPS.",
             summary.converted
         ));
     }
@@ -171,6 +171,10 @@ mod tests {
             body.contains("colour"),
             "pixels alone are not enough to trust a delete; colour metadata is \
              checked too and the dialog must say so: {body}"
+        );
+        assert!(
+            body.contains("lens"),
+            "shot data is checked as well, and cataloguing depends on it: {body}"
         );
     }
 

@@ -164,6 +164,36 @@ Detection is proven by mutation rather than assumed: tests perturb a colour matr
 coefficient and a white level on a genuinely converted file and assert both are
 caught.
 
+### Shot data
+
+Timestamps, exposure, ISO, focal length, camera serial, artist, copyright and GPS
+are compared through rawler's `RawMetadata`. Two fields are deliberately excluded:
+
+- `modify_date`, which the conversion legitimately sets to now.
+- Lens make, model and specification, because **rawler reads these from a NEF but
+  not from a DNG**, so comparing through its API would report a loss that has not
+  happened.
+
+That second point was nearly a false conclusion. Comparing through rawler alone
+suggested the lens was being dropped; inspecting the actual bytes showed the DNG
+does carry `LensMake`, `LensModel`, `LensSerialNumber` and `LensSpecification`.
+The gap is in rawler's DNG reader, not in the file.
+
+Lens tags are therefore read straight from both files by `exif_tags`, a small
+TIFF/EXIF reader limited to ASCII and RATIONAL values in IFD0 and the EXIF
+sub-IFD. Two normalisations are required, both measured rather than assumed:
+
+- DNG rewrites lens names in different case (`NIKON` to `Nikon`), so text is
+  compared case-insensitively and trimmed.
+- DNG re-encodes rationals (`240/10` to `24/1`), so numbers are compared by value.
+
+A tag absent from the source is not required in the output; a tag present in the
+source must survive. A file that is not TIFF, or is truncated, yields no tags
+rather than an error, because this check must never fail a conversion on its own.
+
+Also free in practice: 4.18 s to 4.20 s over eight files, since the source is
+already in the page cache from decoding.
+
 ## Panic isolation
 
 dnglab's README states the project deliberately prefers panics over defensive error

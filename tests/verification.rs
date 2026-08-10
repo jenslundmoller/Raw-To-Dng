@@ -8,7 +8,8 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use neftodng::convert::{convert_file, Outcome};
-use neftodng::verify::{compare_metadata, verify_against_source};
+use neftodng::exif_tags::{read_lens_tags, LENS_MODEL};
+use neftodng::verify::{compare_exif, compare_lens_tags, compare_metadata, verify_against_source};
 
 static COUNTER: AtomicU32 = AtomicU32::new(0);
 
@@ -151,6 +152,59 @@ fn a_wrong_colour_matrix_is_detected() {
 
     let result = compare_metadata(&src, &dst);
     assert!(result.is_err(), "a perturbed colour matrix must be caught");
+    eprintln!("detected: {}", result.unwrap_err());
+}
+
+#[test]
+fn lens_and_shot_data_survive_a_real_conversion() {
+    let Some((nef, _)) = two_fixtures() else {
+        eprintln!("skipping: set NEFTODNG_TEST_DIR to a folder with two NEFs");
+        return;
+    };
+    let dir = scratch("exif");
+    let dng = dir.join("out.dng");
+    convert_file(&nef, &dng, false).expect("conversion should succeed");
+
+    // Non-vacuous: the source must actually carry the tags, or a check that
+    // compares nothing would pass and prove nothing.
+    let tags = read_lens_tags(&nef);
+    assert!(
+        tags.contains_key(&LENS_MODEL),
+        "fixture has no lens model to compare; this test would be meaningless"
+    );
+
+    assert_eq!(
+        compare_lens_tags(&nef, &dng),
+        Ok(()),
+        "lens tags must survive despite DNG normalising their case"
+    );
+    assert_eq!(
+        compare_exif(&nef, &dng),
+        Ok(()),
+        "timestamps, exposure and GPS must survive"
+    );
+}
+
+#[test]
+fn a_file_that_dropped_the_lens_tags_is_rejected() {
+    let Some((nef, _)) = two_fixtures() else {
+        eprintln!("skipping: set NEFTODNG_TEST_DIR to a folder with two NEFs");
+        return;
+    };
+    let dir = scratch("nolens");
+    let stripped = dir.join("no-lens.tif");
+
+    // A valid little-endian TIFF with an empty IFD: parses, carries no lens.
+    let mut bytes = vec![0x49, 0x49, 0x2A, 0x00];
+    bytes.extend_from_slice(&8u32.to_le_bytes());
+    bytes.extend_from_slice(&0u16.to_le_bytes());
+    fs::write(&stripped, &bytes).expect("write stripped file");
+
+    let result = compare_lens_tags(&nef, &stripped);
+    assert!(
+        result.is_err(),
+        "losing the lens model must be caught, not ignored: {result:?}"
+    );
     eprintln!("detected: {}", result.unwrap_err());
 }
 

@@ -62,32 +62,95 @@ not supported. They use intoPIX TicoRAW, which is patented, so an open-source
 decoder cannot legally ship without a licence. Those bodies shooting Lossless
 Compressed work normally.
 
-## Building
-
-Requires Rust and the GTK4 development libraries:
-
-```bash
-sudo apt install libgtk-4-dev libadwaita-1-dev
-cargo build --release
-```
-
 ## Installing
 
+There are no prebuilt packages — you compile it yourself. It takes about a minute
+and needs no root access.
+
+### 1. Install Rust
+
+**Use [rustup](https://rustup.rs), not your distribution's package.** This needs
+Rust 1.88 or newer, and distro packages are often far older — Ubuntu 24.04 ships
+1.75, which will fail to build with a confusing error.
+
 ```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+Then either restart your terminal or run `source "$HOME/.cargo/env"`. Check it
+worked:
+
+```bash
+cargo --version
+```
+
+Already have Rust? Update it with `rustup update`.
+
+### 2. Install the build dependencies
+
+Needs GTK 4.14 or newer and libadwaita 1.5 or newer, which means Ubuntu 24.04,
+Fedora 40, or anything more recent.
+
+**Debian, Ubuntu, Zorin, Mint:**
+```bash
+sudo apt install git build-essential libgtk-4-dev libadwaita-1-dev
+```
+
+**Fedora:**
+```bash
+sudo dnf install git gcc gtk4-devel libadwaita-devel
+```
+
+**Arch, Manjaro:**
+```bash
+sudo pacman -S git base-devel gtk4 libadwaita
+```
+
+**openSUSE:**
+```bash
+sudo zypper install git gcc gtk4-devel libadwaita-devel
+```
+
+### 3. Download and install
+
+```bash
+git clone https://github.com/jenslundmoller/Raw-To-Dng.git
+cd Raw-To-Dng
 ./install.sh
 ```
 
-Installs entirely under `~/.local` — no root needed. The binary goes to
-`~/.local/bin`, with an icon and desktop entry so the app appears in your
-application grid and under *Open With* for raw files.
+`install.sh` compiles the app and installs it — you do not need to run `cargo
+build` separately.
 
-The installer records your existing default applications for every raw format it
-registers and restores anything it would have displaced, so it will not hijack
+Everything goes under `~/.local`: the binary to `~/.local/bin`, plus an icon and
+desktop entry so the app appears in your application grid and under *Open With*
+for raw files. Nothing is written outside your home directory.
+
+The installer also records your existing default applications for every raw format
+it registers and restores anything it would have displaced, so it will not hijack
 double-click from your raw editor.
+
+### 4. Run it
+
+Look for **RAW to DNG** in your applications, or run `rawtodng` in a terminal.
+
+### Uninstalling
+
+From the same folder you installed from:
 
 ```bash
 ./install.sh --uninstall
 ```
+
+### If it does not work
+
+| Symptom | Cause and fix |
+| --- | --- |
+| `cargo: command not found` | Rust is not installed, or the terminal was not restarted after installing it. Run `source "$HOME/.cargo/env"`. |
+| Build fails mentioning a `rustc` version | Your Rust is too old. Use rustup as in step 1, then `rustup update`. |
+| Build fails on `gtk4` or `libadwaita` | The development packages from step 2 are missing, or your distribution is older than GTK 4.14. |
+| `rawtodng: command not found` | `~/.local/bin` is not on your `PATH`. Use `~/.local/bin/rawtodng`, or add that folder to your `PATH`. |
+| Not in the application grid | Log out and back in, or run `update-desktop-database ~/.local/share/applications`. |
 
 ## Using it
 

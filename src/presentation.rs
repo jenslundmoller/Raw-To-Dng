@@ -60,9 +60,54 @@ pub fn present(result: &Result<Outcome, String>) -> RowPresentation {
     }
 }
 
+/// How the failures filter button should look for a given queue.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FailureIndicator {
+    pub visible: bool,
+    pub label: String,
+    /// Whether the filter may stay switched on. Filtering to failures when
+    /// there are none leaves an empty list with a non-empty queue.
+    pub filter_allowed: bool,
+}
+
+/// Derive the failures button from the queue, rather than tracking it
+/// separately and having to remember every place that changes the queue.
+pub fn failure_indicator(failed: u32) -> FailureIndicator {
+    FailureIndicator {
+        visible: failed > 0,
+        label: format!("{failed} failed"),
+        filter_allowed: failed > 0,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn no_failures_means_no_button_and_no_filtering() {
+        // The regression: clearing the queue left "2 failed" showing, and the
+        // filter still on, so newly added files appeared as an empty list.
+        let i = failure_indicator(0);
+
+        assert!(!i.visible, "nothing failed, so nothing to offer");
+        assert!(
+            !i.filter_allowed,
+            "filtering to failures with none would hide a non-empty queue"
+        );
+    }
+
+    #[test]
+    fn failures_are_counted_in_the_button() {
+        assert_eq!(failure_indicator(2).label, "2 failed");
+        assert!(failure_indicator(2).visible);
+        assert!(failure_indicator(2).filter_allowed);
+    }
+
+    #[test]
+    fn a_single_failure_reads_naturally() {
+        assert_eq!(failure_indicator(1).label, "1 failed");
+    }
 
     #[test]
     fn a_converted_file_shows_both_sizes_and_no_error_styling() {

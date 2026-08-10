@@ -92,6 +92,14 @@ were skipped or failed, and the total space saved. Sizes go through
 being hardcoded. A batch whose DNGs came out *larger* says so plainly instead of
 reporting a negative saving.
 
+**Failures** — a toggle appears in the header once something fails and filters the
+queue down to just those files. Its label, visibility and whether filtering is
+permitted are all **derived from the queue** by `failure_indicator`, re-evaluated
+at every point that changes the queue: adding files, clearing, starting a run, and
+each finished file. Tracking that state alongside the queue instead produced a bug
+where clearing left a stale "2 failed" showing with the filter still active, so
+newly added files rendered as an empty list beneath a non-empty queue.
+
 **Options** — an `AdwPreferencesDialog` mapping onto `ConvertParams`: compression
 (Lossless / Uncompressed), embed original NEF, crop mode, preserve mtime, optional
 Artist string. Defaults are good enough to ignore entirely.

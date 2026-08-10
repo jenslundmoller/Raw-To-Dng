@@ -14,7 +14,7 @@ use rayon::prelude::*;
 use crate::convert::{convert_file, Outcome};
 use crate::model::FileRow;
 use crate::paths::{base_for_folder, is_nikon_raw, AddSource};
-use crate::presentation::present;
+use crate::presentation::{failure_indicator, present};
 use crate::scan::collect_raw_files;
 use crate::summary::{completion_message, BatchSummary};
 
@@ -248,11 +248,38 @@ pub fn build(app: &adw::Application) -> AddPaths {
         });
     }
 
+    // Derived from the queue rather than tracked alongside it, so no caller can
+    // forget to update it. Clearing the queue previously left a stale
+    // "2 failed" showing, with the filter still on hiding newly added files.
+    let refresh_failures = {
+        let store = store.clone();
+        let failures_btn = failures_btn.clone();
+        let failure_filter = failure_filter.clone();
+        move || {
+            let failed = (0..store.n_items())
+                .filter_map(|i| store.item(i).and_downcast::<FileRow>())
+                .filter(FileRow::failed)
+                .count() as u32;
+
+            let indicator = failure_indicator(failed);
+            failures_btn.set_label(&indicator.label);
+            failures_btn.set_visible(indicator.visible);
+            if !indicator.filter_allowed && failures_btn.is_active() {
+                // Untoggling also detaches the filter, via connect_toggled.
+                failures_btn.set_active(false);
+            }
+            if failures_btn.is_active() {
+                failure_filter.changed(gtk::FilterChange::Different);
+            }
+        }
+    };
+
     // ---- adding files -----------------------------------------------------
     let add_paths: AddPaths = {
         let store = store.clone();
         let out_root = out_root.clone();
         let refresh_stack = refresh_stack.clone();
+        let refresh_failures = refresh_failures.clone();
         Rc::new(move |dropped: Vec<PathBuf>| {
             let out = out_root.borrow().clone();
 
@@ -279,6 +306,7 @@ pub fn build(app: &adw::Application) -> AddPaths {
             }
 
             refresh_stack();
+            refresh_failures();
         })
     };
 
@@ -349,9 +377,11 @@ pub fn build(app: &adw::Application) -> AddPaths {
     {
         let store = store.clone();
         let refresh_stack = refresh_stack.clone();
+        let refresh_failures = refresh_failures.clone();
         clear_btn.connect_clicked(move |_| {
             store.remove_all();
             refresh_stack();
+            refresh_failures();
         });
     }
 
@@ -395,7 +425,7 @@ pub fn build(app: &adw::Application) -> AddPaths {
         let overwrite_c = overwrite.clone();
         let window_c = window.clone();
         let failures_btn_c = failures_btn.clone();
-        let failure_filter_c = failure_filter.clone();
+        let refresh_failures_c = refresh_failures.clone();
         let add_files_btn_c = add_files_btn.clone();
         let add_folder_btn_c = add_folder_btn.clone();
         let clear_btn_c = clear_btn.clone();
@@ -426,8 +456,7 @@ pub fn build(app: &adw::Application) -> AddPaths {
                     row.set_tooltip("");
                 }
             }
-            failures_btn_c.set_active(false);
-            failures_btn_c.set_visible(false);
+            refresh_failures_c();
 
             cancel.store(false, Ordering::SeqCst);
             convert_btn_c.set_visible(false);
@@ -476,7 +505,7 @@ pub fn build(app: &adw::Application) -> AddPaths {
             let progress = progress_c.clone();
             let window_for_dialog = window_c.clone();
             let failures_btn = failures_btn_c.clone();
-            let failure_filter = failure_filter_c.clone();
+            let refresh_failures = refresh_failures_c.clone();
             let add_files_btn = add_files_btn_c.clone();
             let add_folder_btn = add_folder_btn_c.clone();
             let clear_btn = clear_btn_c.clone();
@@ -509,13 +538,7 @@ pub fn build(app: &adw::Application) -> AddPaths {
                             }
 
                             if shown.failed {
-                                failures_btn.set_visible(true);
-                                failures_btn.set_label(&format!("{} failed", summary.failed));
-                                // The row only became a match now, so a filter
-                                // that is already applied must re-evaluate.
-                                if failures_btn.is_active() {
-                                    failure_filter.changed(gtk::FilterChange::LessStrict);
-                                }
+                                refresh_failures();
                             }
 
                             progress.set_fraction(

@@ -5,7 +5,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use neftodng::convert::{convert_file, Outcome};
+use rawtodng::convert::{convert_file, Outcome};
 
 static COUNTER: AtomicU32 = AtomicU32::new(0);
 
@@ -13,7 +13,7 @@ static COUNTER: AtomicU32 = AtomicU32::new(0);
 /// tests have no dependencies.
 fn scratch(name: &str) -> PathBuf {
     let n = COUNTER.fetch_add(1, Ordering::SeqCst);
-    let dir = std::env::temp_dir().join(format!("neftodng-test-{}-{}-{}", std::process::id(), n, name));
+    let dir = std::env::temp_dir().join(format!("rawtodng-test-{}-{}-{}", std::process::id(), n, name));
     fs::create_dir_all(&dir).expect("create scratch dir");
     dir
 }
@@ -72,11 +72,11 @@ fn existing_target_is_skipped_rather_than_overwritten() {
 
 /// The case the whole panic-isolation design exists for: a real NEF whose data
 /// is cut short, which is what a failed card read or an interrupted copy looks
-/// like. Set NEFTODNG_TEST_NEF to run it.
+/// like. Set RAWTODNG_TEST_NEF to run it.
 #[test]
 fn truncated_real_nef_is_contained_and_does_not_kill_the_process() {
-    let Ok(fixture) = std::env::var("NEFTODNG_TEST_NEF") else {
-        eprintln!("skipping: set NEFTODNG_TEST_NEF to a .NEF path to run this test");
+    let Ok(fixture) = std::env::var("RAWTODNG_TEST_NEF") else {
+        eprintln!("skipping: set RAWTODNG_TEST_NEF to a .NEF path to run this test");
         return;
     };
 
@@ -97,11 +97,11 @@ fn truncated_real_nef_is_contained_and_does_not_kill_the_process() {
     assert!(part_files(&dir).is_empty(), "no .part may be left behind");
 }
 
-/// End-to-end against a real camera file. Set NEFTODNG_TEST_NEF to run it.
+/// End-to-end against a real camera file. Set RAWTODNG_TEST_NEF to run it.
 #[test]
 fn real_nef_converts_to_a_dng_and_leaves_no_part_file() {
-    let Ok(fixture) = std::env::var("NEFTODNG_TEST_NEF") else {
-        eprintln!("skipping: set NEFTODNG_TEST_NEF to a .NEF path to run this test");
+    let Ok(fixture) = std::env::var("RAWTODNG_TEST_NEF") else {
+        eprintln!("skipping: set RAWTODNG_TEST_NEF to a .NEF path to run this test");
         return;
     };
     let src = PathBuf::from(fixture);

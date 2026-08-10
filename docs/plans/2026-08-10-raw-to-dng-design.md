@@ -1,4 +1,4 @@
-# NefToDng — design
+# RawToDng — design
 
 **Date:** 2026-08-10
 **Status:** validated, ready to implement
@@ -272,7 +272,7 @@ The HE/HE\* exclusion is unchanged and remains the one hard limit.
 
 ### Naming
 
-The binary, application ID and desktop file basename stay `NefToDng` while the
+The binary, application ID and desktop file basename stay `RawToDng` while the
 user-visible name is "RAW to DNG". Changing the application ID would orphan the
 installed desktop entry and break the Wayland window-to-icon association, which is
 not worth a cosmetic rename.
@@ -304,7 +304,7 @@ Optional, for debugging: `sudo apt install libimage-exiftool-perl`
 `~/.local/share/icons/hicolor/scalable/apps`, and the desktop entry to
 `~/.local/share/applications`. `./install.sh --uninstall` reverses it.
 
-The desktop entry is named `dk.lundmoller.NefToDng.desktop` to match the
+The desktop entry is named `dk.lundmoller.RawToDng.desktop` to match the
 GApplication ID exactly, which is how Wayland associates a window with its icon
 in the dash and the alt-tab switcher. `Exec` is written as an absolute path at
 install time, because `~/.local/bin` is not reliably on `PATH` for applications

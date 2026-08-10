@@ -110,9 +110,9 @@ cargo test
 Tests that need real camera files are skipped unless you point them at some:
 
 ```bash
-NEFTODNG_TEST_DIR=/path/to/folder/of/raws \
-NEFTODNG_TEST_NEF=/path/to/one.nef \
-NEFTODNG_TEST_PORTRAIT_NEF=/path/to/a/portrait.nef \
+RAWTODNG_TEST_DIR=/path/to/folder/of/raws \
+RAWTODNG_TEST_NEF=/path/to/one.nef \
+RAWTODNG_TEST_PORTRAIT_NEF=/path/to/a/portrait.nef \
 cargo test
 ```
 
@@ -121,7 +121,7 @@ rotated shots, and a regression there once rejected every portrait photograph.
 
 ## Design notes
 
-`docs/plans/2026-08-10-nef-to-dng-design.md` records the architecture and the
+`docs/plans/2026-08-10-raw-to-dng-design.md` records the architecture and the
 reasoning behind each decision, including the measurements behind every tolerance
 and the cases where a library reported something the files did not actually say.
 

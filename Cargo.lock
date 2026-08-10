@@ -1076,19 +1076,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "neftodng"
-version = "0.1.0"
-dependencies = [
- "async-channel",
- "gtk4",
- "libadwaita",
- "num_cpus",
- "rawler",
- "rayon",
- "walkdir",
-]
-
-[[package]]
 name = "no_std_io2"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1329,6 +1316,19 @@ dependencies = [
  "uuid",
  "weezl",
  "zerocopy",
+]
+
+[[package]]
+name = "rawtodng"
+version = "0.1.0"
+dependencies = [
+ "async-channel",
+ "gtk4",
+ "libadwaita",
+ "num_cpus",
+ "rawler",
+ "rayon",
+ "walkdir",
 ]
 
 [[package]]

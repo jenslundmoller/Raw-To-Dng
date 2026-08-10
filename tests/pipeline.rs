@@ -1,18 +1,18 @@
 //! The full path the Convert button drives: scan a folder, work out targets,
 //! convert. Exercised without GTK so it can run in CI.
 //!
-//! Set NEFTODNG_TEST_DIR to a folder containing NEFs to run it.
+//! Set RAWTODNG_TEST_DIR to a folder containing NEFs to run it.
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use neftodng::convert::{convert_file, Outcome};
-use neftodng::paths::{base_for_folder, output_path, AddSource};
-use neftodng::scan::collect_raw_files;
-use neftodng::summary::BatchSummary;
+use rawtodng::convert::{convert_file, Outcome};
+use rawtodng::paths::{base_for_folder, output_path, AddSource};
+use rawtodng::scan::collect_raw_files;
+use rawtodng::summary::BatchSummary;
 
 fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("neftodng-pipeline-{}-{name}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("rawtodng-pipeline-{}-{name}", std::process::id()));
     let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(&dir).expect("scratch");
     dir
@@ -20,8 +20,8 @@ fn scratch(name: &str) -> PathBuf {
 
 #[test]
 fn scans_a_folder_and_converts_every_file_into_a_mirrored_tree() {
-    let Ok(source_dir) = std::env::var("NEFTODNG_TEST_DIR") else {
-        eprintln!("skipping: set NEFTODNG_TEST_DIR to a folder of NEFs to run this test");
+    let Ok(source_dir) = std::env::var("RAWTODNG_TEST_DIR") else {
+        eprintln!("skipping: set RAWTODNG_TEST_DIR to a folder of NEFs to run this test");
         return;
     };
     let source_dir = PathBuf::from(source_dir);

@@ -1,4 +1,4 @@
-//! NefToDng — batch conversion of Nikon NEF raw files to DNG.
+//! RawToDng — batch conversion of camera raw files to DNG.
 
 pub mod convert;
 pub mod exif_tags;

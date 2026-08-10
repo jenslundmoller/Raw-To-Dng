@@ -52,7 +52,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for FileRow {
-        const NAME: &'static str = "NefToDngFileRow";
+        const NAME: &'static str = "RawToDngFileRow";
         type Type = super::FileRow;
     }
 

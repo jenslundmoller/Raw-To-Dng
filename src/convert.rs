@@ -80,7 +80,7 @@ pub fn convert_file(
         // The source is never deleted, so embedding a second copy of it inside
         // every DNG would roughly double the archive for no benefit.
         embedded: false,
-        software: concat!("NefToDng ", env!("CARGO_PKG_VERSION")).to_string(),
+        software: concat!("RawToDng ", env!("CARGO_PKG_VERSION")).to_string(),
         ..Default::default()
     };
 

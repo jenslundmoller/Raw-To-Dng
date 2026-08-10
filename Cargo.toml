@@ -1,17 +1,17 @@
 [package]
-name = "neftodng"
+name = "rawtodng"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.88"
 license = "LGPL-2.1"
-description = "Batch convert Nikon NEF raw files to DNG"
+description = "Batch convert camera raw files to DNG, with verification"
 
 [lib]
-name = "neftodng"
+name = "rawtodng"
 path = "src/lib.rs"
 
 [[bin]]
-name = "neftodng"
+name = "rawtodng"
 path = "src/main.rs"
 
 [dependencies]

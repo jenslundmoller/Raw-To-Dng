@@ -1,21 +1,21 @@
 //! Proof that verification catches the failure this feature exists for: a DNG
 //! that looks fine but does not hold the original's data.
 //!
-//! Set NEFTODNG_TEST_DIR to a folder with at least two NEFs to run these.
+//! Set RAWTODNG_TEST_DIR to a folder with at least two NEFs to run these.
 
 use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use neftodng::convert::{convert_file, Outcome};
-use neftodng::exif_tags::{read_lens_tags, LENS_MODEL};
-use neftodng::verify::{compare_exif, compare_lens_tags, compare_metadata, verify_against_source};
+use rawtodng::convert::{convert_file, Outcome};
+use rawtodng::exif_tags::{read_lens_tags, LENS_MODEL};
+use rawtodng::verify::{compare_exif, compare_lens_tags, compare_metadata, verify_against_source};
 
 static COUNTER: AtomicU32 = AtomicU32::new(0);
 
 fn scratch(name: &str) -> PathBuf {
     let n = COUNTER.fetch_add(1, Ordering::SeqCst);
-    let dir = std::env::temp_dir().join(format!("neftodng-verify-{}-{n}-{name}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("rawtodng-verify-{}-{n}-{name}", std::process::id()));
     let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(&dir).expect("scratch");
     dir
@@ -23,7 +23,7 @@ fn scratch(name: &str) -> PathBuf {
 
 /// Two different NEFs from the fixture folder.
 fn two_fixtures() -> Option<(PathBuf, PathBuf)> {
-    let dir = std::env::var("NEFTODNG_TEST_DIR").ok()?;
+    let dir = std::env::var("RAWTODNG_TEST_DIR").ok()?;
     let mut nefs: Vec<PathBuf> = fs::read_dir(dir)
         .ok()?
         .flatten()
@@ -44,7 +44,7 @@ fn two_fixtures() -> Option<(PathBuf, PathBuf)> {
 #[test]
 fn a_real_conversion_verifies_against_its_source() {
     let Some((nef, _)) = two_fixtures() else {
-        eprintln!("skipping: set NEFTODNG_TEST_DIR to a folder with two NEFs");
+        eprintln!("skipping: set RAWTODNG_TEST_DIR to a folder with two NEFs");
         return;
     };
     let dir = scratch("match");
@@ -65,7 +65,7 @@ fn a_real_conversion_verifies_against_its_source() {
 #[test]
 fn a_dng_holding_a_different_photo_is_rejected() {
     let Some((nef_a, nef_b)) = two_fixtures() else {
-        eprintln!("skipping: set NEFTODNG_TEST_DIR to a folder with two NEFs");
+        eprintln!("skipping: set RAWTODNG_TEST_DIR to a folder with two NEFs");
         return;
     };
     let dir = scratch("wrongphoto");
@@ -85,7 +85,7 @@ fn a_dng_holding_a_different_photo_is_rejected() {
 #[test]
 fn colour_and_level_metadata_survives_a_real_conversion() {
     let Some((nef, _)) = two_fixtures() else {
-        eprintln!("skipping: set NEFTODNG_TEST_DIR to a folder with two NEFs");
+        eprintln!("skipping: set RAWTODNG_TEST_DIR to a folder with two NEFs");
         return;
     };
     let dir = scratch("meta");
@@ -112,7 +112,7 @@ fn colour_and_level_metadata_survives_a_real_conversion() {
 #[test]
 fn a_wrong_white_level_is_detected() {
     let Some((nef, _)) = two_fixtures() else {
-        eprintln!("skipping: set NEFTODNG_TEST_DIR to a folder with two NEFs");
+        eprintln!("skipping: set RAWTODNG_TEST_DIR to a folder with two NEFs");
         return;
     };
     let dir = scratch("whitelevel");
@@ -134,7 +134,7 @@ fn a_wrong_white_level_is_detected() {
 #[test]
 fn a_wrong_colour_matrix_is_detected() {
     let Some((nef, _)) = two_fixtures() else {
-        eprintln!("skipping: set NEFTODNG_TEST_DIR to a folder with two NEFs");
+        eprintln!("skipping: set RAWTODNG_TEST_DIR to a folder with two NEFs");
         return;
     };
     let dir = scratch("matrix");
@@ -158,7 +158,7 @@ fn a_wrong_colour_matrix_is_detected() {
 #[test]
 fn lens_and_shot_data_survive_a_real_conversion() {
     let Some((nef, _)) = two_fixtures() else {
-        eprintln!("skipping: set NEFTODNG_TEST_DIR to a folder with two NEFs");
+        eprintln!("skipping: set RAWTODNG_TEST_DIR to a folder with two NEFs");
         return;
     };
     let dir = scratch("exif");
@@ -188,7 +188,7 @@ fn lens_and_shot_data_survive_a_real_conversion() {
 #[test]
 fn a_file_that_dropped_the_lens_tags_is_rejected() {
     let Some((nef, _)) = two_fixtures() else {
-        eprintln!("skipping: set NEFTODNG_TEST_DIR to a folder with two NEFs");
+        eprintln!("skipping: set RAWTODNG_TEST_DIR to a folder with two NEFs");
         return;
     };
     let dir = scratch("nolens");
@@ -213,11 +213,11 @@ fn a_file_that_dropped_the_lens_tags_is_rejected() {
 /// reads the real tag and reports `Rotate90`. Comparing that field failed every
 /// portrait photograph even though the EXIF orientation round-tripped correctly.
 ///
-/// Set NEFTODNG_TEST_PORTRAIT_NEF to a portrait raw file to run this.
+/// Set RAWTODNG_TEST_PORTRAIT_NEF to a portrait raw file to run this.
 #[test]
 fn a_portrait_photograph_verifies() {
-    let Ok(fixture) = std::env::var("NEFTODNG_TEST_PORTRAIT_NEF") else {
-        eprintln!("skipping: set NEFTODNG_TEST_PORTRAIT_NEF to a portrait raw file");
+    let Ok(fixture) = std::env::var("RAWTODNG_TEST_PORTRAIT_NEF") else {
+        eprintln!("skipping: set RAWTODNG_TEST_PORTRAIT_NEF to a portrait raw file");
         return;
     };
     let nef = PathBuf::from(fixture);
@@ -253,7 +253,7 @@ fn a_portrait_photograph_verifies() {
 #[test]
 fn a_silently_corrupted_dng_is_rejected() {
     let Some((nef, _)) = two_fixtures() else {
-        eprintln!("skipping: set NEFTODNG_TEST_DIR to a folder with two NEFs");
+        eprintln!("skipping: set RAWTODNG_TEST_DIR to a folder with two NEFs");
         return;
     };
     let dir = scratch("corrupted");

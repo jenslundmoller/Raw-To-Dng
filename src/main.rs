@@ -1,4 +1,4 @@
-//! NefToDng — batch convert Nikon NEF raw files to DNG.
+//! RawToDng — batch convert camera raw files to DNG.
 
 use std::cell::RefCell;
 use std::path::PathBuf;
@@ -7,9 +7,9 @@ use std::rc::Rc;
 use adw::prelude::*;
 use gtk::{gio, glib};
 
-use neftodng::ui::{self, AddPaths};
+use rawtodng::ui::{self, AddPaths};
 
-const APP_ID: &str = "dk.lundmoller.NefToDng";
+const APP_ID: &str = "dk.lundmoller.RawToDng";
 
 fn main() -> glib::ExitCode {
     let app = adw::Application::builder()

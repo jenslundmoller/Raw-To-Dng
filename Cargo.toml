@@ -1,0 +1,21 @@
+[package]
+name = "neftodng"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+license = "LGPL-2.1"
+description = "Batch convert Nikon NEF raw files to DNG"
+
+[lib]
+name = "neftodng"
+path = "src/lib.rs"
+
+[[bin]]
+name = "neftodng"
+path = "src/main.rs"
+
+[dependencies]
+rawler = "0.7.2"
+
+[profile.release]
+opt-level = 3

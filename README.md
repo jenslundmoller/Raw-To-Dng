@@ -64,8 +64,35 @@ Compressed work normally.
 
 ## Installing
 
-There are no prebuilt packages — you compile it yourself. It takes about a minute
-and needs no root access.
+Two ways: download a ready-made build, or compile it yourself. Neither needs root.
+
+### Download (easiest)
+
+Grab the latest archive from
+[Releases](https://github.com/jenslundmoller/Raw-To-Dng/releases), then:
+
+```bash
+tar xzf rawtodng-*-x86_64-linux.tar.gz
+cd rawtodng-*-x86_64-linux
+./install.sh
+```
+
+No Rust, no compiling. You need a 64-bit x86 Linux with GTK 4.14 or newer and
+libadwaita 1.5 or newer — Ubuntu 24.04, Fedora 40, or anything more recent. Those
+libraries ship with any current GNOME desktop, so there is usually nothing to
+install.
+
+To check the download, compare it against the published `.sha256` file:
+
+```bash
+sha256sum -c rawtodng-*-x86_64-linux.tar.gz.sha256
+```
+
+If it will not start, see [If it does not work](#if-it-does-not-work) below.
+
+## Building from source
+
+Takes about a minute.
 
 ### 1. Install Rust
 
@@ -136,7 +163,7 @@ Look for **RAW to DNG** in your applications, or run `rawtodng` in a terminal.
 
 ### Uninstalling
 
-From the same folder you installed from:
+From whichever folder you installed from — a release archive or a source checkout:
 
 ```bash
 ./install.sh --uninstall

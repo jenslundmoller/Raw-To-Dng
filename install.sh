@@ -21,13 +21,31 @@ if [[ "${1:-}" == "--uninstall" ]]; then
     exit 0
 fi
 
-echo "Building release binary…"
-cargo build --release --manifest-path "$SRC_DIR/Cargo.toml"
+# Works from a source checkout and from an unpacked release archive. In the
+# archive the binary sits next to this script, so there is nothing to compile
+# and Rust is not needed at all.
+if [ -f "$SRC_DIR/rawtodng" ]; then
+    BINARY="$SRC_DIR/rawtodng"
+    echo "Using the prebuilt binary from this archive."
+elif [ -f "$SRC_DIR/Cargo.toml" ]; then
+    if ! command -v cargo >/dev/null 2>&1; then
+        echo "Error: cargo not found, and no prebuilt binary is present." >&2
+        echo "Install Rust from https://rustup.rs, or download a release archive" >&2
+        echo "from https://github.com/jenslundmoller/Raw-To-Dng/releases" >&2
+        exit 1
+    fi
+    echo "Building release binary…"
+    cargo build --release --manifest-path "$SRC_DIR/Cargo.toml"
+    BINARY="$SRC_DIR/target/release/rawtodng"
+else
+    echo "Error: neither a prebuilt binary nor a source tree found here." >&2
+    exit 1
+fi
 
 mkdir -p "$BIN_DIR" "$APP_DIR" "$ICON_DIR"
 
 echo "Installing binary to $BIN_DIR/rawtodng"
-install -m 755 "$SRC_DIR/target/release/rawtodng" "$BIN_DIR/rawtodng"
+install -m 755 "$BINARY" "$BIN_DIR/rawtodng"
 
 echo "Installing icon to $ICON_DIR/$APP_ID.svg"
 install -m 644 "$SRC_DIR/data/$APP_ID.svg" "$ICON_DIR/$APP_ID.svg"

@@ -208,6 +208,48 @@ fn a_file_that_dropped_the_lens_tags_is_rejected() {
     eprintln!("detected: {}", result.unwrap_err());
 }
 
+/// Regression: portrait shots were rejected. rawler's NEF decoder never
+/// populates `RawImage.orientation`, leaving it `Normal`, while its DNG decoder
+/// reads the real tag and reports `Rotate90`. Comparing that field failed every
+/// portrait photograph even though the EXIF orientation round-tripped correctly.
+///
+/// Set NEFTODNG_TEST_PORTRAIT_NEF to a portrait raw file to run this.
+#[test]
+fn a_portrait_photograph_verifies() {
+    let Ok(fixture) = std::env::var("NEFTODNG_TEST_PORTRAIT_NEF") else {
+        eprintln!("skipping: set NEFTODNG_TEST_PORTRAIT_NEF to a portrait raw file");
+        return;
+    };
+    let nef = PathBuf::from(fixture);
+    let dir = scratch("portrait");
+    let dng = dir.join("out.dng");
+
+    // Non-vacuous: this must really be a rotated shot, or it proves nothing.
+    let meta = rawler::decoders::RawMetadata::default();
+    let _ = meta;
+    let src_orientation = {
+        let s = rawler::rawsource::RawSource::new(&nef).expect("open");
+        let d = rawler::get_decoder(&s).expect("decoder");
+        d.raw_metadata(&s, &rawler::decoders::RawDecodeParams::default())
+            .expect("metadata")
+            .exif
+            .orientation
+    };
+    assert!(
+        matches!(src_orientation, Some(o) if o != 1),
+        "fixture is not a rotated shot (orientation {src_orientation:?}); test would be meaningless"
+    );
+
+    let outcome = convert_file(&nef, &dng, false);
+    assert!(
+        outcome.is_ok(),
+        "a portrait photograph must convert and verify: {outcome:?}"
+    );
+
+    // And the orientation must genuinely survive, via the EXIF tag.
+    assert_eq!(compare_exif(&nef, &dng), Ok(()));
+}
+
 #[test]
 fn a_silently_corrupted_dng_is_rejected() {
     let Some((nef, _)) = two_fixtures() else {

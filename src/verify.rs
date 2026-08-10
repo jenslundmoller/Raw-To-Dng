@@ -196,7 +196,11 @@ pub fn compare_metadata(
         format!("{:?}", dst.photometric)
     );
     same!("components per pixel", src.cpp, dst.cpp);
-    same!("orientation", src.orientation, dst.orientation);
+    // RawImage.orientation is deliberately not compared. rawler's NEF decoder
+    // never populates it, leaving Normal, while its DNG decoder reads the real
+    // tag — so every portrait shot compared Normal against Rotate90 and was
+    // rejected despite converting correctly. Orientation is still verified, from
+    // the authoritative EXIF tag, in compare_exif.
     same!("active area", src.active_area, dst.active_area);
     same!("crop area", src.crop_area, dst.crop_area);
 

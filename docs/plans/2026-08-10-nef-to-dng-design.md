@@ -155,7 +155,14 @@ Identical pixels are not sufficient: a file with correct samples but a wrong whi
 level or colour matrix renders wrongly while passing any sample comparison. So the
 same two decodes are also compared on everything a renderer depends on — colour
 matrices per illuminant, white and black levels, CFA layout, components per pixel,
-orientation, active area and crop area.
+active area and crop area.
+
+`RawImage.orientation` is deliberately **not** among them. rawler's NEF decoder
+never populates that field, leaving it `Normal`, while its DNG decoder reads the
+real tag. Comparing it rejected every portrait photograph — `Normal` against
+`Rotate90` — despite the conversion being correct: the EXIF orientation tag round
+-trips as 6 in both files. Orientation is still verified, from that authoritative
+EXIF tag, in the shot-data comparison.
 
 All of these round-trip **exactly** on a real Nikon Z 6 file, so equality is
 demanded rather than approximated. The one exception is white balance: DNG stores

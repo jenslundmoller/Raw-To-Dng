@@ -46,10 +46,22 @@ pub fn base_for_folder(dropped: &Path) -> PathBuf {
     dropped.parent().unwrap_or(dropped).to_path_buf()
 }
 
-/// Whether a path is a Nikon raw file we can convert, judged by extension.
-pub fn is_nikon_raw(path: &Path) -> bool {
+/// Extensions accepted as input.
+///
+/// Taken from rawler rather than hardcoded, so support tracks the library. DNG
+/// is deliberately removed: it is this app's *output*, and accepting it would
+/// invite re-converting an already-converted archive.
+pub fn accepted_extensions() -> impl Iterator<Item = &'static str> {
+    rawler::decoders::supported_extensions()
+        .iter()
+        .copied()
+        .filter(|e| !e.eq_ignore_ascii_case("dng"))
+}
+
+/// Whether a path is a raw file we can convert, judged by extension.
+pub fn is_supported_raw(path: &Path) -> bool {
     match path.extension().and_then(|e| e.to_str()) {
-        Some(ext) => ext.eq_ignore_ascii_case("nef") || ext.eq_ignore_ascii_case("nrw"),
+        Some(ext) => accepted_extensions().any(|known| known.eq_ignore_ascii_case(ext)),
         None => false,
     }
 }
@@ -110,13 +122,38 @@ mod tests {
     }
 
     #[test]
-    fn recognises_nikon_raw_regardless_of_extension_case() {
-        assert!(is_nikon_raw(Path::new("/x/AMB_2657.NEF")));
-        assert!(is_nikon_raw(Path::new("/x/AMB_2657.nef")));
-        assert!(is_nikon_raw(Path::new("/x/DSCN0001.NRW")));
-        assert!(!is_nikon_raw(Path::new("/x/AMB_2657.dng")));
-        assert!(!is_nikon_raw(Path::new("/x/AMB_2657.jpg")));
-        assert!(!is_nikon_raw(Path::new("/x/NEF")));
+    fn recognises_raw_files_regardless_of_extension_case() {
+        assert!(is_supported_raw(Path::new("/x/AMB_2657.NEF")));
+        assert!(is_supported_raw(Path::new("/x/AMB_2657.nef")));
+        assert!(is_supported_raw(Path::new("/x/DSCN0001.NRW")));
+        assert!(!is_supported_raw(Path::new("/x/AMB_2657.jpg")));
+        assert!(!is_supported_raw(Path::new("/x/NEF")), "no extension at all");
+    }
+
+    #[test]
+    fn recognises_other_manufacturers() {
+        // One per major brand, including RW2 for Panasonic/Lumix.
+        for name in [
+            "P1000123.RW2", // Panasonic Lumix
+            "IMG_0001.CR2", // Canon
+            "IMG_0002.CR3", // Canon mirrorless
+            "DSC00001.ARW", // Sony
+            "DSCF0001.RAF", // Fuji
+            "P1010001.ORF", // Olympus
+            "IMGP0001.PEF", // Pentax
+            "L1000001.RWL", // Leica
+            "SAM_0001.SRW", // Samsung
+        ] {
+            assert!(is_supported_raw(Path::new(name)), "{name} should be accepted");
+        }
+    }
+
+    #[test]
+    fn dng_is_not_accepted_as_input() {
+        // It is this app's output; accepting it would invite re-converting an
+        // archive that is already converted.
+        assert!(!is_supported_raw(Path::new("/x/AMB_2657.dng")));
+        assert!(!is_supported_raw(Path::new("/x/AMB_2657.DNG")));
     }
 
     #[test]

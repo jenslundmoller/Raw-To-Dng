@@ -1,12 +1,12 @@
 [Desktop Entry]
 Type=Application
-Name=NEF to DNG
+Name=RAW to DNG
 GenericName=Raw Converter
-Comment=Batch convert Nikon NEF raw files to DNG
+Comment=Batch convert camera raw files to DNG
 Exec=@BINARY@ %F
 Icon=dk.lundmoller.NefToDng
 Terminal=false
 Categories=Graphics;Photography;
-Keywords=NEF;DNG;RAW;Nikon;Photo;Convert;Camera;
-MimeType=image/x-nikon-nef;image/x-nikon-nrw;
+Keywords=RAW;DNG;Convert;Camera;Photo;Nikon;NEF;Canon;CR2;CR3;Sony;ARW;Panasonic;Lumix;RW2;Fujifilm;RAF;Olympus;ORF;Pentax;PEF;Leica;Samsung;
+MimeType=image/x-canon-cr2;image/x-canon-cr3;image/x-canon-crw;image/x-fuji-raf;image/x-kodak-dcr;image/x-kodak-kdc;image/x-minolta-mrw;image/x-nikon-nef;image/x-nikon-nrw;image/x-olympus-orf;image/x-panasonic-rw;image/x-panasonic-rw2;image/x-pentax-pef;image/x-sigma-x3f;image/x-sony-arw;
 StartupNotify=true

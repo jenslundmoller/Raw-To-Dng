@@ -4,13 +4,13 @@ use std::path::{Path, PathBuf};
 
 use walkdir::WalkDir;
 
-use crate::paths::{is_nikon_raw, is_within};
+use crate::paths::{is_supported_raw, is_within};
 
 /// How deep a folder walk will descend. Deliberately finite so a symlink loop or
 /// an accidentally dropped `/` cannot hang the UI indefinitely.
 const MAX_DEPTH: usize = 12;
 
-/// Every Nikon raw file beneath `root`, excluding anything inside `out_root`.
+/// Every supported raw file beneath `root`, excluding anything inside `out_root`.
 ///
 /// Results are sorted so a batch runs in a predictable order.
 pub fn collect_raw_files(root: &Path, out_root: &Path) -> Vec<PathBuf> {
@@ -22,7 +22,7 @@ pub fn collect_raw_files(root: &Path, out_root: &Path) -> Vec<PathBuf> {
         .filter_map(Result::ok)
         .filter(|e| e.file_type().is_file())
         .map(|e| e.into_path())
-        .filter(|p| is_nikon_raw(p))
+        .filter(|p| is_supported_raw(p))
         .collect();
 
     found.sort();

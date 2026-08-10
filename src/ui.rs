@@ -13,7 +13,7 @@ use rayon::prelude::*;
 
 use crate::convert::{convert_file, Outcome};
 use crate::model::FileRow;
-use crate::paths::{base_for_folder, is_nikon_raw, AddSource};
+use crate::paths::{accepted_extensions, base_for_folder, is_supported_raw, AddSource};
 use crate::presentation::{failure_indicator, present};
 use crate::scan::collect_raw_files;
 use crate::summary::{completion_message, BatchSummary};
@@ -49,7 +49,7 @@ pub fn build(app: &adw::Application) -> AddPaths {
 
     let window = adw::ApplicationWindow::builder()
         .application(app)
-        .title("NEF → DNG")
+        .title("RAW → DNG")
         .default_width(760)
         .default_height(580)
         .build();
@@ -147,8 +147,8 @@ pub fn build(app: &adw::Application) -> AddPaths {
 
     let empty = adw::StatusPage::builder()
         .icon_name("camera-photo-symbolic")
-        .title("Drop NEF files here")
-        .description("Or use Add Files and Add Folder. Your originals are never modified.")
+        .title("Drop raw files here")
+        .description("Nikon, Canon, Sony, Panasonic, Fujifilm, Olympus and more.\nYour originals are never modified.")
         .vexpand(true)
         .build();
 
@@ -300,7 +300,7 @@ pub fn build(app: &adw::Application) -> AddPaths {
                             store.append(&FileRow::new(&file, &add, &out));
                         }
                     }
-                } else if is_nikon_raw(&path) && seen.insert(path.clone()) {
+                } else if is_supported_raw(&path) && seen.insert(path.clone()) {
                     store.append(&FileRow::new(&path, &AddSource::Files, &out));
                 }
             }
@@ -329,17 +329,19 @@ pub fn build(app: &adw::Application) -> AddPaths {
         let add_paths = add_paths.clone();
         let window = window.clone();
         add_files_btn.connect_clicked(move |_| {
+            // Built from the same list the queue filters on, so the chooser can
+            // never offer a file the app would then ignore.
             let filter = gtk::FileFilter::new();
-            filter.set_name(Some("Nikon raw (NEF, NRW)"));
-            filter.add_pattern("*.nef");
-            filter.add_pattern("*.NEF");
-            filter.add_pattern("*.nrw");
-            filter.add_pattern("*.NRW");
+            filter.set_name(Some("Camera raw files"));
+            for ext in accepted_extensions() {
+                filter.add_pattern(&format!("*.{}", ext.to_lowercase()));
+                filter.add_pattern(&format!("*.{}", ext.to_uppercase()));
+            }
             let filters = gio::ListStore::new::<gtk::FileFilter>();
             filters.append(&filter);
 
             let dialog = gtk::FileDialog::builder()
-                .title("Add NEF files")
+                .title("Add raw files")
                 .filters(&filters)
                 .build();
 

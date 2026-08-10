@@ -240,6 +240,44 @@ firing. It stays in as defence-in-depth, because dnglab's README documents
 panicking as intended behaviour on malformed input, but it is untested against a
 real panic.
 
+## Camera support
+
+Input is accepted for every extension rawler supports, queried from
+`rawler::decoders::supported_extensions()` rather than hardcoded, so support
+tracks the library. That is 28 extensions covering 724 camera models across 19
+manufacturers: Canon (139), Sony (103), Panasonic (91), Nikon (90), Fujifilm (85),
+Olympus (65), Pentax, Leica, Hasselblad, Phase One, Samsung, Sigma, Kodak and more.
+
+**DNG is deliberately excluded from the input list** even though rawler reads it.
+It is this application's output, and accepting it would invite re-converting an
+already-converted archive.
+
+Nothing in the pipeline is manufacturer-specific: conversion, the safety
+invariants and the whole verification chain read the camera profile from rawler's
+database. Verification is the safety net for an untested model — a per-model quirk
+surfaces as a verification failure rather than a silently wrong DNG.
+
+**Tested only against Nikon Z 6 files.** rawler ships no sample raws, and no
+non-Nikon files were available, so other manufacturers are supported by
+construction and by the extension tests, not by an end-to-end conversion.
+
+The HE/HE\* exclusion is unchanged and remains the one hard limit.
+
+### Naming
+
+The binary, application ID and desktop file basename stay `NefToDng` while the
+user-visible name is "RAW to DNG". Changing the application ID would orphan the
+installed desktop entry and break the Wayland window-to-icon association, which is
+not worth a cosmetic rename.
+
+### Not stealing default handlers
+
+Declaring MIME types for fifteen raw formats makes this application a candidate
+default handler for all of them, which would displace a raw *editor* — on this
+machine it would have taken thirteen from Darktable. `install.sh` therefore records
+the existing default for each declared type before updating the desktop database
+and restores anything it displaced. The converter stays reachable under *Open With*.
+
 ## Explicitly out of scope
 
 HE/HE\* (patent-encumbered), raw editing or development, non-Nikon formats in the UI

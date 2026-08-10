@@ -211,6 +211,10 @@ rotated shots, and a regression there once rejected every portrait photograph.
 
 ## Design notes
 
+`docs/session-report-2026-08-10.html` is a written report of how the app was
+built: the licensing research, the measurements, every defect found and the
+reasoning behind each decision. Open it in a browser — it is self-contained.
+
 `docs/plans/2026-08-10-raw-to-dng-design.md` records the architecture and the
 reasoning behind each decision, including the measurements behind every tolerance
 and the cases where a library reported something the files did not actually say.

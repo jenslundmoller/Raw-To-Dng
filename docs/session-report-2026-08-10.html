@@ -1,0 +1,860 @@
+<title>RawToDng — Session Report</title>
+<style>
+  :root {
+    --ground:      #F4F6F7;
+    --surface:     #FFFFFF;
+    --surface-alt: #EDF1F2;
+    --ink:         #14181B;
+    --ink-2:       #3D474D;
+    --muted:       #59636B;
+    --rule:        #D6DDE1;
+    --rule-strong: #B8C3C9;
+    --accent:      #0B6E77;
+    --accent-soft: #E1EFF0;
+    --magenta:     #8C2D5E;
+    --magenta-soft:#F6E7EE;
+    --pass:        #2E6B4E;
+    --pass-soft:   #E4F0EA;
+    --fail:        #9B3226;
+    --fail-soft:   #F8E7E4;
+    --shadow:      0 1px 2px rgba(20,24,27,.05), 0 8px 24px -12px rgba(20,24,27,.18);
+
+    --font-display: ui-serif, "Iowan Old Style", "Source Serif Pro", Charter, Georgia, Cambria, serif;
+    --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+    --col: 68ch;
+    --wide: 60rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0D1114;
+      --surface:     #151B1F;
+      --surface-alt: #1B2328;
+      --ink:         #E7ECEE;
+      --ink-2:       #C2CCD1;
+      --muted:       #8E9BA3;
+      --rule:        #253036;
+      --rule-strong: #35434B;
+      --accent:      #57B9C3;
+      --accent-soft: #102E33;
+      --magenta:     #E07BA8;
+      --magenta-soft:#33202B;
+      --pass:        #6FC095;
+      --pass-soft:   #15291F;
+      --fail:        #E4897C;
+      --fail-soft:   #2E1B18;
+      --shadow:      0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #0D1114;
+    --surface:     #151B1F;
+    --surface-alt: #1B2328;
+    --ink:         #E7ECEE;
+    --ink-2:       #C2CCD1;
+    --muted:       #8E9BA3;
+    --rule:        #253036;
+    --rule-strong: #35434B;
+    --accent:      #57B9C3;
+    --accent-soft: #102E33;
+    --magenta:     #E07BA8;
+    --magenta-soft:#33202B;
+    --pass:        #6FC095;
+    --pass-soft:   #15291F;
+    --fail:        #E4897C;
+    --fail-soft:   #2E1B18;
+    --shadow:      0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: var(--wide);
+    margin: 0 auto;
+    padding: 0 1.5rem 6rem;
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    padding: 4.5rem 0 2rem;
+    border-bottom: 2px solid var(--ink);
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1.25rem;
+  }
+  .masthead h1 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(2.4rem, 6vw, 3.6rem);
+    line-height: 1.06;
+    letter-spacing: -.02em;
+    text-wrap: balance;
+    margin: 0 0 .9rem;
+  }
+  .standfirst {
+    font-size: 1.14rem;
+    color: var(--ink-2);
+    max-width: var(--col);
+    margin: 0 0 2rem;
+    text-wrap: pretty;
+  }
+
+  .specstrip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin-bottom: 1.5rem;
+  }
+  .spec {
+    background: var(--surface);
+    padding: .85rem 1rem;
+  }
+  .spec dt {
+    font-family: var(--font-mono);
+    font-size: .66rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: .35rem;
+  }
+  .spec dd {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 1.28rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+  .spec dd small {
+    display: block;
+    font-size: .7rem;
+    color: var(--muted);
+    letter-spacing: .04em;
+    margin-top: .3rem;
+  }
+
+  /* ---------- sections ---------- */
+
+  section { padding-top: 3.5rem; }
+
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.85rem;
+    letter-spacing: -.012em;
+    line-height: 1.2;
+    text-wrap: balance;
+    margin: 0 0 .4rem;
+    padding-bottom: .55rem;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  h3 {
+    font-family: var(--font-body);
+    font-weight: 650;
+    font-size: 1.03rem;
+    letter-spacing: .005em;
+    margin: 2rem 0 .5rem;
+    color: var(--ink);
+  }
+  .sectionnote {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 1.75rem;
+  }
+
+  p { max-width: var(--col); margin: 0 0 1.05rem; text-wrap: pretty; }
+  ul, ol { max-width: var(--col); padding-left: 1.15rem; margin: 0 0 1.05rem; }
+  li { margin-bottom: .45rem; }
+  li::marker { color: var(--accent); }
+
+  strong { font-weight: 650; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+  code {
+    font-family: var(--font-mono);
+    font-size: .87em;
+    background: var(--surface-alt);
+    padding: .1em .35em;
+    border-radius: 3px;
+  }
+
+  /* ---------- tables ---------- */
+
+  .tablewrap {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    margin: 1.25rem 0 1.6rem;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+  caption {
+    caption-side: top;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: .8rem 1rem .55rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  th, td { text-align: left; padding: .62rem 1rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th {
+    font-family: var(--font-mono);
+    font-size: .66rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    background: var(--surface-alt);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tick { color: var(--pass); font-weight: 650; }
+  .cross { color: var(--fail); font-weight: 650; }
+
+  /* ---------- findings ---------- */
+
+  .findings { display: grid; gap: 1rem; margin: 1.5rem 0; }
+  .finding {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--magenta);
+    padding: 1.15rem 1.3rem;
+    box-shadow: var(--shadow);
+  }
+  .finding.caught { border-left-color: var(--accent); }
+  .finding.user { border-left-color: var(--fail); }
+  .finding-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: .7rem;
+    margin-bottom: .55rem;
+  }
+  .finding-head h3 { margin: 0; font-size: 1rem; }
+  .chip {
+    font-family: var(--font-mono);
+    font-size: .62rem;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    padding: .2rem .5rem;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .chip.self { background: var(--accent-soft); color: var(--accent); }
+  .chip.reported { background: var(--fail-soft); color: var(--fail); }
+  .chip.nearmiss { background: var(--magenta-soft); color: var(--magenta); }
+  .finding p { margin: 0 0 .55rem; font-size: .95rem; max-width: none; }
+  .finding p:last-child { margin-bottom: 0; }
+  .finding .label {
+    font-family: var(--font-mono);
+    font-size: .66rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-right: .45rem;
+  }
+
+  /* ---------- pull quote / callout ---------- */
+
+  .callout {
+    background: var(--accent-soft);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    padding: 1.1rem 1.3rem;
+    margin: 1.5rem 0;
+  }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label {
+    font-family: var(--font-mono);
+    font-size: .66rem;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: .4rem;
+  }
+
+  pre {
+    font-family: var(--font-mono);
+    font-size: .82rem;
+    line-height: 1.5;
+    background: var(--surface-alt);
+    border: 1px solid var(--rule);
+    padding: .9rem 1.1rem;
+    overflow-x: auto;
+    margin: 1rem 0 1.4rem;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  /* ---------- commit sequence ---------- */
+
+  .log { border-top: 1px solid var(--rule); margin-top: 1.25rem; }
+  .log-item {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr;
+    gap: 1rem;
+    padding: .62rem 0;
+    border-bottom: 1px solid var(--rule);
+    align-items: baseline;
+  }
+  .log-n {
+    font-family: var(--font-mono);
+    font-size: .74rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+  }
+  .log-msg { font-size: .93rem; }
+  .log-msg .hash {
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    color: var(--accent);
+    margin-right: .55rem;
+  }
+
+  footer {
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid var(--ink);
+    font-size: .88rem;
+    color: var(--muted);
+  }
+  footer p { max-width: var(--col); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">Session report · 10 August 2026</p>
+    <h1>RawToDng</h1>
+    <p class="standfirst">
+      From a licensing question about Nikon's NEF format to a published, verified
+      raw-to-DNG converter for Linux — built, tested against real camera files,
+      and released in a single session.
+    </p>
+
+    <dl class="specstrip">
+      <div class="spec"><dt>Commits</dt><dd>17</dd></div>
+      <div class="spec"><dt>Tests</dt><dd>56<small>all passing</small></dd></div>
+      <div class="spec"><dt>Source</dt><dd>2 343<small>lines, 11 modules</small></dd></div>
+      <div class="spec"><dt>Cameras</dt><dd>724<small>19 manufacturers</small></dd></div>
+      <div class="spec"><dt>Defects</dt><dd>5<small>found and fixed</small></dd></div>
+    </dl>
+
+    <p class="standfirst" style="margin-bottom:0;font-size:.95rem;">
+      <a href="https://github.com/jenslundmoller/Raw-To-Dng">github.com/jenslundmoller/Raw-To-Dng</a>
+      · <a href="https://github.com/jenslundmoller/Raw-To-Dng/releases/tag/v0.1.0">v0.1.0 release</a>
+    </p>
+  </header>
+
+  <section>
+    <h2>The original question</h2>
+    <p class="sectionnote">Is NEF open, and does reading it require a licence?</p>
+
+    <p>
+      NEF is proprietary with no published specification, but <strong>reading it
+      requires no licence from Nikon.</strong> Every open-source decoder — dcraw,
+      LibRaw, darktable, RawTherapee, dnglab — is reverse-engineered, and no raw
+      decoder has ever been sued. Nikon's own SDK is approval-gated, Windows and
+      macOS only, and licence-incompatible with open source.
+    </p>
+    <p>
+      DNG is the opposite: Adobe publishes the specification with a royalty-free,
+      worldwide patent grant for compliant implementations.
+    </p>
+
+    <div class="callout">
+      <span class="label">The one real legal wall</span>
+      <p>
+        Nikon's <strong>High Efficiency</strong> modes (HE and HE*) on the Z9, Z8,
+        Zf, Z6III and ZR use intoPIX TicoRAW, which is <strong>patented</strong>.
+        Reverse engineering does not cure a patent, so an open-source decoder
+        cannot legally ship without a licence. This is why LibRaw, dnglab and
+        darktable all lagged on those bodies.
+      </p>
+    </div>
+
+    <p>
+      That exclusion does not affect the target camera. The Nikon Z 6 writes
+      lossless-compressed NEF, fully supported and unencumbered.
+    </p>
+  </section>
+
+  <section>
+    <h2>Feasibility, established before designing</h2>
+    <p class="sectionnote">A spike, not an estimate</p>
+
+    <p>
+      The hard part of raw conversion is not parsing — it is the per-model
+      calibration database: colour matrices, black and white levels, active areas,
+      CFA layouts. Getting those wrong produces wrong colour, and none of it is
+      derivable from the file. That is why writing a converter from scratch is a
+      multi-year commitment.
+    </p>
+    <p>
+      A spike linking <code>rawler</code> 0.7.2 settled it in under an hour: all
+      eight sample NEFs converted to valid DNG 1.6 with full dual-illuminant colour
+      matrices and white balance intact. <strong>The remaining work was entirely
+      GUI.</strong>
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <caption>Spike results — Nikon Z 6, 6064 × 4040</caption>
+        <thead>
+          <tr><th>Measure</th><th>Result</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Success rate</td><td class="num">8 / 8</td></tr>
+          <tr><td>Speed, single thread</td><td class="num">0.43 s / file</td></tr>
+          <tr><td>Size</td><td class="num">47 MB → 28 MB <span style="color:var(--muted)">(−40%)</span></td></tr>
+          <tr><td>Colour matrices</td><td>Illuminant A + D65 <span class="tick">✓</span></td></tr>
+          <tr><td>White balance</td><td>AsShotNeutral preserved <span class="tick">✓</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>What was built</h2>
+    <p class="sectionnote">Rust · GTK4 · libadwaita · rawler linked directly</p>
+
+    <p>
+      A single self-contained binary, no runtime dependencies beyond the GNOME
+      stack. Linking <code>rawler</code> rather than shelling out to the
+      <code>dnglab</code> CLI gives real cancellation, per-file progress and
+      identical conversion correctness — it is the same engine.
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <caption>Modules, by weight</caption>
+        <thead>
+          <tr><th>Module</th><th class="num">Lines</th><th>Responsibility</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>ui.rs</code></td><td class="num">608</td><td>Window, queue, worker coordination</td></tr>
+          <tr><td><code>verify.rs</code></td><td class="num">453</td><td>Proving output matches input</td></tr>
+          <tr><td><code>exif_tags.rs</code></td><td class="num">257</td><td>Minimal TIFF/EXIF reader for lens tags</td></tr>
+          <tr><td><code>summary.rs</code></td><td class="num">230</td><td>Batch tallies and completion wording</td></tr>
+          <tr><td><code>paths.rs</code></td><td class="num">213</td><td>Output paths, extension filter</td></tr>
+          <tr><td><code>presentation.rs</code></td><td class="num">163</td><td>Row status, icons, failure indicator</td></tr>
+          <tr><td><code>convert.rs</code></td><td class="num">147</td><td>One file: atomic write, panic isolation</td></tr>
+          <tr><td><code>model.rs</code></td><td class="num">111</td><td>Queue row GObject</td></tr>
+          <tr><td><code>scan.rs</code></td><td class="num">83</td><td>Recursive folder walking</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Safety rules, treated as invariants</h3>
+    <ol>
+      <li><strong>Sources are never deleted, moved or modified.</strong> There is no
+        "delete originals" option at any point.</li>
+      <li><strong>Atomic writes.</strong> Output goes to a hidden <code>.part</code>
+        file, renamed only on success. A crash, cancel or full disk never leaves a
+        truncated DNG that could later pass for a good one.</li>
+      <li><strong>Never silently overwrite.</strong> An existing target is skipped
+        unless explicitly opted into.</li>
+    </ol>
+
+    <p>
+      Rule 2 was tested adversarially: a hard write failure under a file-size cap
+      killed the process outright with <code>SIGXFSZ</code> — and what survived was
+      a <code>.part</code> file, never a <code>.dng</code>. The invariant held
+      even against process death.
+    </p>
+  </section>
+
+  <section>
+    <h2>Verification — the centrepiece</h2>
+    <p class="sectionnote">Because the workflow ends in deleting the originals</p>
+
+    <p>
+      The intended use is to convert a large batch and then delete the NEFs. That
+      makes "finished without errors" a claim that has to mean <em>provably
+      correct</em>, not <em>nothing crashed</em>. A file can be written
+      successfully and still be wrong.
+    </p>
+    <p>
+      After writing, the <code>.part</code> file is decoded again and compared
+      against the source. Only a match is renamed to <code>.dng</code>.
+      Verification runs <strong>before</strong> the rename, so a DNG never exists
+      in an unverified state.
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <caption>What is compared, and how strictly</caption>
+        <thead>
+          <tr><th>Category</th><th>Fields</th><th>Rule</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Pixels</td><td>Every raw sample — 24 498 560 of them</td><td class="num">exact bits</td></tr>
+          <tr><td>Colour</td><td>Matrices per illuminant, black &amp; white levels</td><td class="num">exact</td></tr>
+          <tr><td>Colour</td><td>White balance (AsShotNeutral)</td><td class="num">≤ 1e−4 rel.</td></tr>
+          <tr><td>Geometry</td><td>CFA layout, cpp, active area, crop area</td><td class="num">exact</td></tr>
+          <tr><td>Time</td><td>Capture time, sub-seconds, timezone</td><td class="num">exact</td></tr>
+          <tr><td>Exposure</td><td>Shutter, f-number, ISO, bias, metering, flash</td><td class="num">exact</td></tr>
+          <tr><td>Lens</td><td>Make, model, serial, specification</td><td class="num">normalised</td></tr>
+          <tr><td>Identity</td><td>Camera make/model, serial, artist, copyright</td><td class="num">exact</td></tr>
+          <tr><td>Location</td><td>Full GPS block</td><td class="num">exact</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      Every tolerance was measured, not guessed. White balance is the sole
+      non-exact comparison because DNG stores <code>AsShotNeutral</code> as
+      rationals; the observed drift is <strong>1.4 × 10<sup>−5</sup></strong>
+      relative, and the bound is set at 1 × 10<sup>−4</sup> — above the drift,
+      still thousands of times tighter than any visible difference.
+    </p>
+
+    <h3>Why not a file-size check</h3>
+    <p>
+      A size heuristic was proposed and rejected on evidence. Compression ratio
+      depends on image content, so a flat frame can legitimately compress very
+      small while a corrupt file lands at a plausible size. The test suite proves
+      the gap: flipping bits deep inside a valid DNG leaves it
+      <strong>exactly the same size with an intact header</strong>.
+    </p>
+    <pre><code>verification failed: 56710 of 24498560 samples differ from the original</code></pre>
+
+    <h3>Cost</h3>
+    <div class="tablewrap">
+      <table>
+        <caption>Verification overhead, measured on eight files</caption>
+        <thead>
+          <tr><th>Stage added</th><th class="num">Per file</th><th class="num">8 files</th><th>Overhead</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Conversion only</td><td class="num">422 ms</td><td class="num">3.38 s</td><td>—</td></tr>
+          <tr><td>+ pixel comparison</td><td class="num">545 ms</td><td class="num">4.36 s</td><td class="num">+29%</td></tr>
+          <tr><td>+ colour &amp; geometry</td><td class="num">523 ms</td><td class="num">4.18 s</td><td>free</td></tr>
+          <tr><td>+ EXIF, lens, GPS</td><td class="num">525 ms</td><td class="num">4.20 s</td><td>free</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      The metadata checks are free because they reuse decodes the pixel comparison
+      already performs. Only the first step costs anything.
+    </p>
+  </section>
+
+  <section>
+    <h2>Defects found</h2>
+    <p class="sectionnote">Five fixed · two near-misses worth recording</p>
+
+    <div class="findings">
+
+      <article class="finding user">
+        <div class="finding-head">
+          <h3>Every portrait photograph was rejected</h3>
+          <span class="chip reported">Reported by user</span>
+        </div>
+        <p><span class="label">Symptom</span>
+          <code>verification failed: orientation differs (original Normal, written Rotate90)</code></p>
+        <p><span class="label">Cause</span>
+          rawler's NEF decoder never populates <code>RawImage.orientation</code>,
+          leaving it <code>Normal</code>, while its DNG decoder reads the real tag.
+          The comparison was between a field only one side fills in. All eight test
+          fixtures were landscape, so it never surfaced.</p>
+        <p><span class="label">Verdict</span>
+          The DNG was correct all along — the EXIF orientation tag reads 6 in both
+          files, confirmed from the bytes. The failure was in the safe direction:
+          good files rejected, none wrongly accepted, no DNG written.</p>
+      </article>
+
+      <article class="finding user">
+        <div class="finding-head">
+          <h3>Stale "2 failed" after clearing the queue</h3>
+          <span class="chip reported">Reported by user</span>
+        </div>
+        <p><span class="label">Cause</span>
+          The indicator was tracked alongside the queue and set once during a run,
+          never re-evaluated. Clearing emptied the queue and forgot it existed.</p>
+        <p><span class="label">Hidden sibling</span>
+          The filter also stayed attached, so files added after clearing would have
+          been hidden entirely — an empty list above a non-empty queue.</p>
+        <p><span class="label">Fix</span>
+          State is now derived from the queue at every mutation point, which
+          removes the class of bug rather than the symptom.</p>
+      </article>
+
+      <article class="finding caught">
+        <div class="finding-head">
+          <h3>Crash on launch from the app grid</h3>
+          <span class="chip self">Caught by testing</span>
+        </div>
+        <p><span class="label">Cause</span>
+          <code>set_default_icon_name</code> ran before GTK was initialised and
+          panicked. Running the binary directly had masked it — it only appeared
+          via the desktop entry, the exact path of daily use.</p>
+      </article>
+
+      <article class="finding caught">
+        <div class="finding-head">
+          <h3>Installer hijacked default apps for 13 raw formats</h3>
+          <span class="chip self">Caught by testing</span>
+        </div>
+        <p><span class="label">Cause</span>
+          Declaring MIME types made the converter a candidate default handler,
+          displacing Darktable. Double-clicking a NEF would have opened a converter
+          instead of an editor.</p>
+        <p><span class="label">Fix</span>
+          The installer now records existing defaults and restores anything it
+          displaces. The converter stays reachable under <em>Open With</em>.</p>
+      </article>
+
+      <article class="finding user">
+        <div class="finding-head">
+          <h3>Install instructions were unusable</h3>
+          <span class="chip reported">Reported by user</span>
+        </div>
+        <p><span class="label">Cause</span>
+          The README said <code>./install.sh</code> with no clone step and no
+          mention of installing Rust.</p>
+        <p><span class="label">The real trap</span>
+          <code>apt install rustc</code> on Ubuntu 24.04 gives <strong>1.75</strong>;
+          this needs <strong>1.88</strong>. Anyone following instinct would hit a
+          confusing compiler error and stop.</p>
+      </article>
+
+      <article class="finding">
+        <div class="finding-head">
+          <h3>Lens metadata appeared to be lost — it was not</h3>
+          <span class="chip nearmiss">Near-miss</span>
+        </div>
+        <p>
+          Comparing through rawler showed <code>lens_make</code>,
+          <code>lens_model</code> and <code>lens_spec</code> all returning
+          <code>None</code> from the DNG. That reads as "conversion drops your lens
+          data" and would have been reported as data loss.
+        </p>
+        <p><span class="label">Reality</span>
+          Inspecting the bytes showed the DNG carries all of it. The gap is in
+          rawler's DNG <em>reader</em>. Two real differences did emerge, both of
+          which would have caused false alarms: case is normalised
+          (<code>NIKON</code> → <code>Nikon</code>) and rationals are re-encoded
+          (<code>240/10</code> → <code>24/1</code>).</p>
+      </article>
+
+      <article class="finding">
+        <div class="finding-head">
+          <h3>Panic isolation was never observed firing</h3>
+          <span class="chip nearmiss">Unproven claim</span>
+        </div>
+        <p>
+          <code>catch_unwind</code> wraps every conversion because dnglab's README
+          documents panicking as intended behaviour on malformed input. A truncated
+          real NEF produced a clean decode error instead, so the guard has never
+          been seen to trigger. It stays as defence-in-depth, recorded as untested
+          rather than claimed as proven.
+        </p>
+      </article>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>Verified, not assumed</h2>
+    <p class="sectionnote">Claims checked empirically before being acted on</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Question</th><th>Method</th><th>Answer</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Can a DNG be proven identical to its NEF?</td>
+            <td>Decode both, compare all samples</td>
+            <td><span class="tick">✓</span> bit-for-bit</td>
+          </tr>
+          <tr>
+            <td>Does a size check catch corruption?</td>
+            <td>Flip bits inside a valid DNG</td>
+            <td><span class="cross">✗</span> same size, undetected</td>
+          </tr>
+          <tr>
+            <td>Do colour matrices survive?</td>
+            <td>Compare both illuminants</td>
+            <td><span class="tick">✓</span> delta 0</td>
+          </tr>
+          <tr>
+            <td>Does the DNG keep the lens?</td>
+            <td>Read the raw TIFF tags</td>
+            <td><span class="tick">✓</span> library was wrong</td>
+          </tr>
+          <tr>
+            <td>Does a write failure corrupt output?</td>
+            <td><code>ulimit -f</code>, kill mid-write</td>
+            <td><span class="tick">✓</span> only a <code>.part</code> survived</td>
+          </tr>
+          <tr>
+            <td>Do the install docs work?</td>
+            <td>Fresh clone, follow them exactly</td>
+            <td><span class="tick">✓</span> 53 s to installed</td>
+          </tr>
+          <tr>
+            <td>Does the release need Rust?</td>
+            <td>Install with cargo off <code>PATH</code></td>
+            <td><span class="tick">✓</span> works without it</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Decisions and their reasons</h2>
+    <p class="sectionnote">Choices that shaped the result</p>
+
+    <h3>Camera support was widened to every manufacturer</h3>
+    <p>
+      Originally Nikon-only. The accepted extensions are now queried from rawler at
+      runtime rather than hardcoded — 724 models across 19 manufacturers, so
+      support tracks the library. DNG is deliberately excluded as input, being the
+      app's own output.
+    </p>
+
+    <h3>Flathub is not available</h3>
+    <p>
+      Flathub's requirements state that <strong>"applications containing
+      AI-generated or AI-assisted code, documentation, or any other content are not
+      allowed"</strong>, and that submission pull requests must not be opened using
+      AI tools. This code was written with AI assistance, so submitting it would
+      misrepresent its provenance. The README discloses this openly.
+    </p>
+    <p>
+      Self-hosting a Flatpak repository was considered and dropped: apps outside
+      Flathub are invisible unless each user adds the remote manually, so the
+      hosting work buys no discoverability.
+    </p>
+
+    <h3>Distribution instead</h3>
+    <p>
+      A GitHub release with a prebuilt binary. Three commands, no Rust, no
+      compiling — verified by downloading it back from GitHub and installing it with
+      <code>cargo</code> removed from <code>PATH</code>.
+    </p>
+    <pre><code>tar xzf rawtodng-0.1.0-x86_64-linux.tar.gz
+cd rawtodng-0.1.0-x86_64-linux
+./install.sh</code></pre>
+  </section>
+
+  <section>
+    <h2>Known limits</h2>
+    <p class="sectionnote">Stated plainly rather than buried</p>
+
+    <ul>
+      <li><strong>Nikon HE/HE* is unsupported</strong> — patented TicoRAW. Those
+        bodies shooting Lossless Compressed work normally.</li>
+      <li><strong>Only Nikon Z 6 files have been converted end-to-end.</strong>
+        Other manufacturers rest on rawler's camera database and the extension
+        tests. Verification is the safety net: a model-specific problem surfaces as
+        a failure, not a silently wrong DNG.</li>
+      <li><strong>Verification proves correctness at write time, not durability.</strong>
+        Bit rot after conversion is outside the app's reach.</li>
+      <li><strong>Nikon maker notes are not compared</strong> — Picture Control,
+        Active D-Lighting. rawler does not expose them. Darktable does not read them
+        either; Nikon's own software would.</li>
+      <li><strong>The GUI has never been seen by its author.</strong> GNOME blocks
+        dbus screenshots from unsandboxed apps, so every visual detail was confirmed
+        by the user, not observed directly.</li>
+    </ul>
+
+    <div class="callout">
+      <span class="label">Standing recommendation</span>
+      <p>
+        On the first large batch, keep the originals until a handful of DNGs have
+        been opened in Darktable. Verification proves the data matches; your eyes
+        confirm the rendering is what you expect.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>The sequence</h2>
+    <p class="sectionnote">17 commits · order carries the reasoning</p>
+
+    <div class="log">
+      <div class="log-item"><span class="log-n">01</span><span class="log-msg"><span class="hash">24aac51</span>Add design for a GTK4 NEF to DNG batch converter</span></div>
+      <div class="log-item"><span class="log-n">02</span><span class="log-msg"><span class="hash">c86c2c9</span>Add output path resolution with tests</span></div>
+      <div class="log-item"><span class="log-n">03</span><span class="log-msg"><span class="hash">bd58c5a</span>Add single-file conversion with atomic writes and panic isolation</span></div>
+      <div class="log-item"><span class="log-n">04</span><span class="log-msg"><span class="hash">28bafc1</span>Add GTK4 queue window and folder scanning</span></div>
+      <div class="log-item"><span class="log-n">05</span><span class="log-msg"><span class="hash">b197057</span>Report per-file sizes and show a batch completion dialog</span></div>
+      <div class="log-item"><span class="log-n">06</span><span class="log-msg"><span class="hash">292d758</span>Add desktop entry, icon and installer</span></div>
+      <div class="log-item"><span class="log-n">07</span><span class="log-msg"><span class="hash">3e17be7</span>Make failures visible during and after a run</span></div>
+      <div class="log-item"><span class="log-n">08</span><span class="log-msg"><span class="hash">b43d15d</span>Verify every DNG against its source before accepting it</span></div>
+      <div class="log-item"><span class="log-n">09</span><span class="log-msg"><span class="hash">97c0022</span>Verify colour, levels and geometry alongside pixels</span></div>
+      <div class="log-item"><span class="log-n">10</span><span class="log-msg"><span class="hash">1704f17</span>Verify shot data: timestamps, exposure, lens and GPS</span></div>
+      <div class="log-item"><span class="log-n">11</span><span class="log-msg"><span class="hash">c5d5e64</span>Fix stale failures indicator after clearing the queue</span></div>
+      <div class="log-item"><span class="log-n">12</span><span class="log-msg"><span class="hash">02ced1e</span>Accept raw files from all supported manufacturers</span></div>
+      <div class="log-item"><span class="log-n">13</span><span class="log-msg"><span class="hash">5f669ad</span>Stop rejecting portrait photographs</span></div>
+      <div class="log-item"><span class="log-n">14</span><span class="log-msg"><span class="hash">595a8f3</span>Add LICENSE and README</span></div>
+      <div class="log-item"><span class="log-n">15</span><span class="log-msg"><span class="hash">574b4c9</span>Rename the project from NefToDng to RawToDng</span></div>
+      <div class="log-item"><span class="log-n">16</span><span class="log-msg"><span class="hash">9a8a682</span>Rewrite the install instructions for someone starting from nothing</span></div>
+      <div class="log-item"><span class="log-n">17</span><span class="log-msg"><span class="hash">6402a52</span>Support installing from a prebuilt release archive</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Outstanding</h2>
+    <p class="sectionnote">Nothing blocking · items for whenever</p>
+    <ul>
+      <li><strong>Re-convert any earlier batch containing portrait shots.</strong>
+        Those produced no DNG before the orientation fix. Re-running is safe —
+        existing files are skipped.</li>
+      <li>Keep a portrait raw somewhere permanent and point
+        <code>RAWTODNG_TEST_PORTRAIT_NEF</code> at it; the current fixture is an SD
+        card.</li>
+      <li>The local folder is still <code>~/AI/NefToDng</code>. Renaming it breaks
+        nothing.</li>
+      <li>Releases are built by hand. A GitHub Actions workflow could build and
+        attach the archive on each tag.</li>
+      <li>Cancel-then-clear is the next untested state transition.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>
+      RawToDng 0.1.0 · LGPL-2.1 · built and released 10 August 2026.
+      Linked against rawler 0.7.2. No Nikon SDK, no Adobe SDK, no intoPIX code.
+    </p>
+  </footer>
+
+</div>

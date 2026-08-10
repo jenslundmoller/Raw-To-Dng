@@ -15,6 +15,7 @@ use std::path::Path;
 use rawler::dng::convert::{convert_raw_file, ConvertParams};
 
 use crate::paths::part_path;
+use crate::verify::{verify_against_source, VerifyError};
 
 /// What happened to one file.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -35,6 +36,9 @@ pub enum ConvertError {
     Panicked(String),
     /// The output could not be created, written or renamed.
     Io(std::io::Error),
+    /// The DNG was written but could not be proven to match its source, so it
+    /// was discarded rather than presented as a successful conversion.
+    Unverified(VerifyError),
 }
 
 impl fmt::Display for ConvertError {
@@ -43,6 +47,7 @@ impl fmt::Display for ConvertError {
             Self::Decode(m) => write!(f, "could not convert: {m}"),
             Self::Panicked(m) => write!(f, "corrupt or unsupported file ({m})"),
             Self::Io(e) => write!(f, "write failed: {e}"),
+            Self::Unverified(e) => write!(f, "{e}"),
         }
     }
 }
@@ -67,6 +72,10 @@ pub fn convert_file(
     }
 
     let part = part_path(target);
+    // A .part here is debris from a previous run that was killed mid-write;
+    // nothing may be appended to it.
+    let _ = fs::remove_file(&part);
+
     let params = ConvertParams {
         // The source is never deleted, so embedding a second copy of it inside
         // every DNG would roughly double the archive for no benefit.
@@ -91,6 +100,17 @@ pub fn convert_file(
             .sync_all()
             .map_err(ConvertError::Io)
     }));
+
+    // Prove the written file carries the same raw samples as the source before
+    // it is allowed to become a .dng. Verifying the .part means a failure never
+    // leaves a file that looks like a finished conversion.
+    let written = match written {
+        Ok(Ok(())) => match verify_against_source(source, &part) {
+            Ok(()) => Ok(Ok(())),
+            Err(e) => Ok(Err(ConvertError::Unverified(e))),
+        },
+        other => other,
+    };
 
     let failure = match written {
         Ok(Ok(())) => match fs::rename(&part, target) {

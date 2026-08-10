@@ -6,4 +6,5 @@ pub mod paths;
 pub mod presentation;
 pub mod scan;
 pub mod summary;
+pub mod verify;
 pub mod ui;

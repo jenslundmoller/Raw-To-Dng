@@ -116,6 +116,31 @@ Individually-selected files land flat at the output root. The output root is exc
 from folder walks, so it may safely live inside the source tree. Destination
 directories are created lazily, only when a file in them succeeds.
 
+## Verification
+
+The intended workflow is to convert a large batch and then delete the NEFs, so
+"finished without errors" has to mean "provably correct", not "nothing crashed".
+
+After writing, the `.part` file is decoded again and every raw sample is compared
+against the source. Only a bit-for-bit match is renamed to `.dng`; anything else
+is discarded and reported as a failure. Verification runs **before** the rename,
+so a `.dng` never exists in an unverified state — there is no window in which a
+suspect file could be mistaken for a finished one.
+
+Measured on a Nikon Z 6 file: 6064x4040, 24,498,560 samples, identical bit-for-bit
+under both `CropMode::Best` and `CropMode::None`. Sequential cost rose from about
+422 ms to about 545 ms per file, roughly 29%.
+
+**Why not a file-size heuristic.** Compression ratio depends on image content, so
+a flat or dark frame can legitimately compress very small while a corrupt file can
+land at a plausible size. A threshold would both false-alarm and miss real damage.
+The test `a_silently_corrupted_dng_is_rejected` demonstrates the gap: bits flipped
+deep inside a valid DNG leave the file exactly the same size with an intact header,
+and are caught only by comparing samples — 56,710 of 24,498,560 differed.
+
+Sample comparison is by exact bits, including for floating-point data. A conversion
+that merely rounds to something close has still lost data.
+
 ## Panic isolation
 
 dnglab's README states the project deliberately prefers panics over defensive error

@@ -32,8 +32,11 @@ pub fn present(result: &Result<Outcome, String>) -> RowPresentation {
             source_bytes,
             target_bytes,
         }) => RowPresentation {
+            // "verified" is the load-bearing word: it says the DNG was read back
+            // and proven to hold the same raw data, not merely that writing
+            // finished without complaint.
             status: format!(
-                "Done · {} → {}",
+                "Done · verified · {} → {}",
                 glib::format_size(*source_bytes),
                 glib::format_size(*target_bytes)
             ),
@@ -69,6 +72,11 @@ mod tests {
         }));
 
         assert!(p.status.starts_with("Done"), "{}", p.status);
+        assert!(
+            p.status.contains("verified"),
+            "success must state that the data was checked, not just that it finished: {}",
+            p.status
+        );
         assert!(p.status.contains('→'), "should show the transition: {}", p.status);
         assert_eq!(p.icon, ICON_DONE);
         assert!(!p.failed);

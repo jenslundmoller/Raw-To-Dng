@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use neftodng::convert::{convert_file, Outcome};
-use neftodng::verify::verify_against_source;
+use neftodng::verify::{compare_metadata, verify_against_source};
 
 static COUNTER: AtomicU32 = AtomicU32::new(0);
 
@@ -79,6 +79,79 @@ fn a_dng_holding_a_different_photo_is_rejected() {
         result.is_err(),
         "a DNG of a different photo must not verify: {result:?}"
     );
+}
+
+#[test]
+fn colour_and_level_metadata_survives_a_real_conversion() {
+    let Some((nef, _)) = two_fixtures() else {
+        eprintln!("skipping: set NEFTODNG_TEST_DIR to a folder with two NEFs");
+        return;
+    };
+    let dir = scratch("meta");
+    let dng = dir.join("out.dng");
+    convert_file(&nef, &dng, false).expect("conversion should succeed");
+
+    let src = rawler::decode_file(&nef).expect("decode nef");
+    let dst = rawler::decode_file(&dng).expect("decode dng");
+
+    assert_eq!(
+        compare_metadata(&src, &dst),
+        Ok(()),
+        "colour matrices, levels and geometry must survive"
+    );
+    // Both illuminants must actually be present, or the check above would be
+    // passing vacuously.
+    assert!(
+        src.color_matrix.len() >= 2,
+        "expected a dual-illuminant camera profile, got {}",
+        src.color_matrix.len()
+    );
+}
+
+#[test]
+fn a_wrong_white_level_is_detected() {
+    let Some((nef, _)) = two_fixtures() else {
+        eprintln!("skipping: set NEFTODNG_TEST_DIR to a folder with two NEFs");
+        return;
+    };
+    let dir = scratch("whitelevel");
+    let dng = dir.join("out.dng");
+    convert_file(&nef, &dng, false).expect("conversion should succeed");
+
+    let src = rawler::decode_file(&nef).expect("decode nef");
+    let mut dst = rawler::decode_file(&dng).expect("decode dng");
+
+    // A wrong white level clips highlights and shifts exposure, while leaving
+    // every pixel value untouched — invisible to a sample comparison.
+    dst.whitelevel = rawler::rawimage::WhiteLevel(vec![12000]);
+
+    let result = compare_metadata(&src, &dst);
+    assert!(result.is_err(), "a shifted white level must be caught");
+    eprintln!("detected: {}", result.unwrap_err());
+}
+
+#[test]
+fn a_wrong_colour_matrix_is_detected() {
+    let Some((nef, _)) = two_fixtures() else {
+        eprintln!("skipping: set NEFTODNG_TEST_DIR to a folder with two NEFs");
+        return;
+    };
+    let dir = scratch("matrix");
+    let dng = dir.join("out.dng");
+    convert_file(&nef, &dng, false).expect("conversion should succeed");
+
+    let src = rawler::decode_file(&nef).expect("decode nef");
+    let mut dst = rawler::decode_file(&dng).expect("decode dng");
+
+    // Perturb one coefficient: colours would render wrong, pixels identical.
+    let key = *src.color_matrix.keys().next().expect("an illuminant");
+    if let Some(m) = dst.color_matrix.get_mut(&key) {
+        m[0] += 0.25;
+    }
+
+    let result = compare_metadata(&src, &dst);
+    assert!(result.is_err(), "a perturbed colour matrix must be caught");
+    eprintln!("detected: {}", result.unwrap_err());
 }
 
 #[test]

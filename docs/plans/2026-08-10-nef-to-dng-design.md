@@ -141,6 +141,29 @@ and are caught only by comparing samples — 56,710 of 24,498,560 differed.
 Sample comparison is by exact bits, including for floating-point data. A conversion
 that merely rounds to something close has still lost data.
 
+### Metadata
+
+Identical pixels are not sufficient: a file with correct samples but a wrong white
+level or colour matrix renders wrongly while passing any sample comparison. So the
+same two decodes are also compared on everything a renderer depends on — colour
+matrices per illuminant, white and black levels, CFA layout, components per pixel,
+orientation, active area and crop area.
+
+All of these round-trip **exactly** on a real Nikon Z 6 file, so equality is
+demanded rather than approximated. The one exception is white balance: DNG stores
+`AsShotNeutral` as rationals, so a small quantisation is unavoidable and was
+measured at about 1.4e-5 relative. `WB_RELATIVE_TOLERANCE` is set to 1e-4 —
+comfortably above the observed drift, and still thousands of times tighter than any
+visually meaningful white balance difference. Unused channels are `NaN`, and a
+channel appearing or disappearing counts as a mismatch rather than being ignored.
+
+This costs nothing measurable, because it reuses the decodes the pixel comparison
+already performs: 4.36 s to 4.18 s over eight files, within noise.
+
+Detection is proven by mutation rather than assumed: tests perturb a colour matrix
+coefficient and a white level on a genuinely converted file and assert both are
+caught.
+
 ## Panic isolation
 
 dnglab's README states the project deliberately prefers panics over defensive error

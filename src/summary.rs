@@ -70,7 +70,8 @@ pub fn completion_message(summary: &BatchSummary, queued: u32) -> (String, Strin
     // Stated plainly, because deciding whether to delete originals rests on it.
     if summary.converted > 0 {
         lines.push(format!(
-            "All {} verified bit-for-bit against the originals.",
+            "All {} verified against the originals: pixels bit-for-bit, plus \
+             colour matrices, white balance and levels.",
             summary.converted
         ));
     }
@@ -165,6 +166,11 @@ mod tests {
             body.contains("verified"),
             "the dialog is what a delete-originals decision rests on, so it must \
              state that the data was checked: {body}"
+        );
+        assert!(
+            body.contains("colour"),
+            "pixels alone are not enough to trust a delete; colour metadata is \
+             checked too and the dialog must say so: {body}"
         );
     }
 

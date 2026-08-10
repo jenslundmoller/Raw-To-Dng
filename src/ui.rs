@@ -14,6 +14,7 @@ use rayon::prelude::*;
 use crate::convert::{convert_file, Outcome};
 use crate::model::FileRow;
 use crate::paths::{base_for_folder, is_nikon_raw, AddSource};
+use crate::presentation::present;
 use crate::scan::collect_raw_files;
 use crate::summary::{completion_message, BatchSummary};
 
@@ -65,6 +66,7 @@ pub fn build(app: &adw::Application) -> AddPaths {
         row.set_margin_end(12);
 
         let spinner = gtk::Spinner::new();
+        let icon = gtk::Image::new();
         let name = gtk::Label::builder()
             .xalign(0.0)
             .hexpand(true)
@@ -75,9 +77,8 @@ pub fn build(app: &adw::Application) -> AddPaths {
             .ellipsize(gtk::pango::EllipsizeMode::End)
             .max_width_chars(44)
             .build();
-        status.add_css_class("dim-label");
-
         row.append(&spinner);
+        row.append(&icon);
         row.append(&name);
         row.append(&status);
         item.set_child(Some(&row));
@@ -96,9 +97,48 @@ pub fn build(app: &adw::Application) -> AddPaths {
         item.property_expression("item")
             .chain_property::<FileRow>("busy")
             .bind(&spinner, "visible", gtk::Widget::NONE);
+
+        item.property_expression("item")
+            .chain_property::<FileRow>("icon")
+            .bind(&icon, "icon-name", gtk::Widget::NONE);
+
+        // A queued row has no icon yet, and an empty icon-name would render as
+        // a broken image rather than as nothing.
+        item.property_expression("item")
+            .chain_property::<FileRow>("icon")
+            .chain_closure::<bool>(glib::closure!(|_: Option<glib::Object>, icon: String| {
+                !icon.is_empty()
+            }))
+            .bind(&icon, "visible", gtk::Widget::NONE);
+
+        // Failures are tinted with libadwaita's error style; everything else
+        // stays dimmed so the failures are what the eye lands on.
+        item.property_expression("item")
+            .chain_property::<FileRow>("failed")
+            .chain_closure::<glib::StrV>(glib::closure!(
+                |_: Option<glib::Object>, failed: bool| {
+                    if failed {
+                        glib::StrV::from(vec!["error"])
+                    } else {
+                        glib::StrV::from(vec!["dim-label"])
+                    }
+                }
+            ))
+            .bind(&status, "css-classes", gtk::Widget::NONE);
+
+        item.property_expression("item")
+            .chain_property::<FileRow>("tooltip")
+            .bind(&row, "tooltip-text", gtk::Widget::NONE);
     });
 
-    let selection = gtk::NoSelection::new(Some(store.clone()));
+    // The filter is only attached while the failures toggle is on, so the
+    // normal case walks the store directly.
+    let failure_filter = gtk::CustomFilter::new(|obj| {
+        obj.downcast_ref::<FileRow>().is_some_and(FileRow::failed)
+    });
+    let filter_model = gtk::FilterListModel::new(Some(store.clone()), None::<gtk::CustomFilter>);
+
+    let selection = gtk::NoSelection::new(Some(filter_model.clone()));
     let list = gtk::ListView::new(Some(selection), Some(factory));
     let scroller = gtk::ScrolledWindow::builder()
         .child(&list)
@@ -122,9 +162,17 @@ pub fn build(app: &adw::Application) -> AddPaths {
     let add_folder_btn = gtk::Button::with_label("Add Folder");
     let clear_btn = gtk::Button::from_icon_name("edit-clear-all-symbolic");
     clear_btn.set_tooltip_text(Some("Clear the queue"));
+
+    // Appears only once something has failed; toggling it hides everything else.
+    let failures_btn = gtk::ToggleButton::new();
+    failures_btn.set_visible(false);
+    failures_btn.add_css_class("error");
+    failures_btn.set_tooltip_text(Some("Show only the files that failed"));
+
     header.pack_start(&add_files_btn);
     header.pack_start(&add_folder_btn);
     header.pack_end(&clear_btn);
+    header.pack_end(&failures_btn);
 
     // ---- bottom bar -------------------------------------------------------
     let out_btn = gtk::Button::new();
@@ -187,6 +235,18 @@ pub fn build(app: &adw::Application) -> AddPaths {
         }
     };
     refresh_stack();
+
+    {
+        let filter_model = filter_model.clone();
+        let failure_filter = failure_filter.clone();
+        failures_btn.connect_toggled(move |btn| {
+            if btn.is_active() {
+                filter_model.set_filter(Some(&failure_filter));
+            } else {
+                filter_model.set_filter(None::<&gtk::CustomFilter>);
+            }
+        });
+    }
 
     // ---- adding files -----------------------------------------------------
     let add_paths: AddPaths = {
@@ -334,6 +394,8 @@ pub fn build(app: &adw::Application) -> AddPaths {
         let progress_c = progress.clone();
         let overwrite_c = overwrite.clone();
         let window_c = window.clone();
+        let failures_btn_c = failures_btn.clone();
+        let failure_filter_c = failure_filter.clone();
         let add_files_btn_c = add_files_btn.clone();
         let add_folder_btn_c = add_folder_btn.clone();
         let clear_btn_c = clear_btn.clone();
@@ -353,13 +415,19 @@ pub fn build(app: &adw::Application) -> AddPaths {
                 })
                 .collect();
 
+            // A re-run starts from a clean slate, so stale icons and errors from
+            // a previous attempt cannot be mistaken for this one's results.
             for i in 0..total {
                 if let Some(row) = store.item(i).and_downcast::<FileRow>() {
                     row.set_status("Queued");
                     row.set_failed(false);
                     row.set_busy(false);
+                    row.set_icon("");
+                    row.set_tooltip("");
                 }
             }
+            failures_btn_c.set_active(false);
+            failures_btn_c.set_visible(false);
 
             cancel.store(false, Ordering::SeqCst);
             convert_btn_c.set_visible(false);
@@ -407,6 +475,8 @@ pub fn build(app: &adw::Application) -> AddPaths {
             let cancel_btn = cancel_btn_c.clone();
             let progress = progress_c.clone();
             let window_for_dialog = window_c.clone();
+            let failures_btn = failures_btn_c.clone();
+            let failure_filter = failure_filter_c.clone();
             let add_files_btn = add_files_btn_c.clone();
             let add_folder_btn = add_folder_btn_c.clone();
             let clear_btn = clear_btn_c.clone();
@@ -423,21 +493,7 @@ pub fn build(app: &adw::Application) -> AddPaths {
                             }
                         }
                         Msg::Finished { index, result } => {
-                            let (status, failed) = match &result {
-                                Ok(Outcome::Converted {
-                                    source_bytes,
-                                    target_bytes,
-                                }) => (
-                                    format!(
-                                        "Done · {} → {}",
-                                        glib::format_size(*source_bytes),
-                                        glib::format_size(*target_bytes)
-                                    ),
-                                    false,
-                                ),
-                                Ok(Outcome::Skipped) => ("Already exists".to_string(), false),
-                                Err(e) => (e.clone(), true),
-                            };
+                            let shown = present(&result);
 
                             match &result {
                                 Ok(outcome) => summary.record(outcome),
@@ -446,8 +502,20 @@ pub fn build(app: &adw::Application) -> AddPaths {
 
                             if let Some(row) = store.item(index).and_downcast::<FileRow>() {
                                 row.set_busy(false);
-                                row.set_failed(failed);
-                                row.set_status(status);
+                                row.set_failed(shown.failed);
+                                row.set_status(shown.status);
+                                row.set_icon(shown.icon);
+                                row.set_tooltip(shown.tooltip.unwrap_or_default());
+                            }
+
+                            if shown.failed {
+                                failures_btn.set_visible(true);
+                                failures_btn.set_label(&format!("{} failed", summary.failed));
+                                // The row only became a match now, so a filter
+                                // that is already applied must re-evaluate.
+                                if failures_btn.is_active() {
+                                    failure_filter.changed(gtk::FilterChange::LessStrict);
+                                }
                             }
 
                             progress.set_fraction(
@@ -470,6 +538,22 @@ pub fn build(app: &adw::Application) -> AddPaths {
                 dialog.add_response("close", "Close");
                 dialog.set_default_response(Some("close"));
                 dialog.set_close_response("close");
+
+                // Offer the shortcut only when there is something to look at.
+                if summary.failed > 0 {
+                    dialog.add_response("failures", "Show Failures");
+                    dialog.set_response_appearance(
+                        "failures",
+                        adw::ResponseAppearance::Suggested,
+                    );
+                    let failures_btn = failures_btn.clone();
+                    dialog.connect_response(None, move |_, response| {
+                        if response == "failures" {
+                            failures_btn.set_active(true);
+                        }
+                    });
+                }
+
                 dialog.present(Some(&window_for_dialog));
             });
         });

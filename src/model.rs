@@ -37,9 +37,17 @@ mod imp {
         /// Whether this file is being converted right now.
         #[property(get, set)]
         pub busy: Cell<bool>,
-        /// Whether this file failed, used to tint the status label.
+        /// Whether this file failed, used to tint the status label and to
+        /// decide membership when filtering the queue down to failures.
         #[property(get, set)]
         pub failed: Cell<bool>,
+        /// Symbolic icon for the finished state; empty while queued.
+        #[property(get, set)]
+        pub icon: RefCell<String>,
+        /// Full, untruncated explanation shown on hover; empty when there is
+        /// nothing to add beyond the status text.
+        #[property(get, set)]
+        pub tooltip: RefCell<String>,
     }
 
     #[glib::object_subclass]

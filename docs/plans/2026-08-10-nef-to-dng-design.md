@@ -129,6 +129,24 @@ about five lines to neutralise.
   without touching the GUI.
 - **Manual:** cancel mid-batch and confirm no `.part` files and no partial DNGs.
 
+## Deviations from this design, as built
+
+Two things were cut from v1 and are recorded here rather than silently dropped:
+
+- **Thumbnails.** The queue shows filename and status, not an embedded preview.
+  Lazy preview extraction is the single largest complexity add (async decode,
+  `GdkTexture` upload, scroll-aware cancellation) and the app is useful without
+  it. The row layout leaves space for it.
+- **Per-row progress bars.** At ~0.4 s/file a per-file percentage would be
+  theatre, so an active row shows a spinner and the batch shows one overall
+  progress bar. This is more honest about what is actually known.
+
+One design claim was **not** confirmed in practice: a truncated real NEF produced
+a clean decode error rather than a panic, so `catch_unwind` was never observed
+firing. It stays in as defence-in-depth, because dnglab's README documents
+panicking as intended behaviour on malformed input, but it is untested against a
+real panic.
+
 ## Explicitly out of scope
 
 HE/HE\* (patent-encumbered), raw editing or development, non-Nikon formats in the UI
